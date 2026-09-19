@@ -1345,3 +1345,10 @@ dialog::backdrop {
 .lang-step h1 .lang-line + .lang-line { margin-block-start: var(--space-1); }
 .lang-step .lang-cards { margin-block: 0 var(--space-5); max-width: 720px; margin-inline: auto; }
 .lang-step .lang-hint { margin-inline: auto; }
+
+.site-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-3); padding: var(--space-5) clamp(16px, 5vw, 64px); border-block-start: 1px solid var(--border); color: var(--muted); font-size: var(--fs-small); }
+.site-footer[hidden] { display: none; }
+.site-footer .quiet-link { min-block-size: 44px; display: inline-flex; align-items: center; }
+.certificate h1 { max-inline-size: none; }
+.manager-card { margin-inline: 0; }
+@media print { .site-footer { display: none !important; } }

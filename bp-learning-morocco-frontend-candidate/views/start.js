@@ -7,13 +7,13 @@ export function render(state) {
   const course = content(getLang()).course;
   const pct = progress(state);
   const summary = modulesSummary(state);
-  const primaryLabel = isComplete(state) ? t("start.cta.plan") : t(state.dialogueAnswers.length ? "start.cta.continue" : "start.cta.begin");
+  const primaryLabel = isComplete(state) ? t("start.cta.certificate") : t(state.dialogueAnswers.length ? "start.cta.continue" : "start.cta.begin");
   return `<section class="page-shell" aria-labelledby="view-title">
     <div class="hero">
       <div>
         ${pageHead(course.eyebrow, course.title, course.description)}
         <div class="meta"><span>${escapeHTML(course.duration)}</span><span aria-hidden="true">•</span><span>${escapeHTML(course.level)}</span><span aria-hidden="true">•</span><span>${escapeHTML(t("app.savedLocally"))}</span></div>
-        <div class="button-row">${routeLink(isComplete(state) ? "plan" : nextRoute(state), primaryLabel)}${routeLink("plan", t("start.cta.plan"), "button-secondary")}</div>
+        <div class="button-row">${routeLink(isComplete(state) ? "certificate" : nextRoute(state), primaryLabel)}${routeLink("plan", t("start.cta.plan"), "button-secondary")}</div>
       </div>
       <div class="hero-visual">${ring(pct, t("nav.progress", { pct }))}</div>
     </div>

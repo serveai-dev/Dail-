@@ -9,9 +9,11 @@ import * as simulation from "./views/simulation.js";
 import * as result from "./views/result.js";
 import * as modules from "./views/modules.js";
 import * as plan from "./views/plan.js";
+import * as certificate from "./views/certificate.js";
+import * as manager from "./views/manager.js";
 import * as onboarding from "./views/onboarding.js";
 
-const VIEWS = { onboarding, start, prep, simulation, result, modules, plan };
+const VIEWS = { onboarding, start, prep, simulation, result, modules, plan, certificate, manager };
 const storage = window.localStorage;
 let { state, volatile } = loadState(storage);
 const ui = { typing: false, revealedTurn: -1, feedbackTurn: null, typingTimer: 0, onboardingStep: 0, moduleAttempt: {}, moduleRetry: {}, scenarioOpen: window.matchMedia("(min-width: 721px)").matches };
@@ -21,7 +23,7 @@ if (!saveState(storage, state)) volatile = true;
 function route() {
   const value = location.hash.replace(/^#/, "");
   const requested = VIEWS[value] ? value : "start";
-  if (!state.profile.name && requested !== "onboarding") {
+  if (!state.profile.name && requested !== "onboarding" && requested !== "manager") {
     location.replace("#onboarding");
     return "onboarding";
   }
@@ -113,6 +115,12 @@ function afterRender(activeRoute) {
 let lastRoute = null;
 let lastPct = progress(state);
 
+function renderFooter(activeRoute) {
+  const footer = document.querySelector("[data-footer]");
+  footer.hidden = activeRoute === "onboarding";
+  footer.innerHTML = `<span>${escapeHTML(t("app.savedLocally"))}</span><a class="quiet-link" href="#manager" ${activeRoute === "manager" ? "aria-current=\"page\"" : ""}>${escapeHTML(t("nav.manager"))}</a>`;
+}
+
 function render() {
   const activeFocusSelector = focusSelector(document.activeElement);
   const focusWasInHeader = Boolean(document.activeElement?.closest?.("[data-header]"));
@@ -126,6 +134,7 @@ function render() {
     ui.feedbackTurn = null;
   }
   renderHeader(activeRoute);
+  renderFooter(activeRoute);
   document.querySelector("[data-main]").innerHTML = VIEWS[activeRoute].render(state, ui);
   document.querySelectorAll("[data-pct]").forEach((element) => element.style.setProperty("--pct", `${element.dataset.pct}%`));
   const focusTarget = document.querySelector("[data-focus]");
@@ -179,6 +188,9 @@ document.addEventListener("click", (event) => {
     case "listen":
       audio.stop();
       speak(Number(element.dataset.turn));
+      return;
+    case "print":
+      window.print();
       return;
     case "see-result":
       ui.feedbackTurn = null;
