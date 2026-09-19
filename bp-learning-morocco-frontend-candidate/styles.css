@@ -63,6 +63,8 @@ p { margin-block: 0 var(--space-4); }
 .name-input:focus { border-block-end-color: var(--primary); outline: 3px solid var(--focus); outline-offset: 4px; }
 .submit-name { inline-size: 100%; justify-content: space-between; margin-block-start: var(--space-3); }
 .submit-name svg { inline-size: 22px; block-size: 22px; }
+.button svg { inline-size: 20px; block-size: 20px; flex: 0 0 auto; }
+.admin-login .button-primary[type="submit"] { inline-size: 100%; justify-content: space-between; margin-block-start: var(--space-3); }
 .flip-rtl { transition: transform 180ms ease; }
 [dir="rtl"] .flip-rtl { transform: scaleX(-1); }
 .form-alert { color: var(--attention-ink); }
