@@ -1,25 +1,20 @@
 import { t, formatDate } from "../i18n.js";
+import { listProfiles, progress, dialogueScore, modulesSummary } from "../state.js";
 import { escapeHTML, routeLink } from "./shared.js";
-import { progress, dialogueScore, modulesSummary } from "../state.js";
 
 export function render(state) {
-  const head = `<p class="eyebrow">${escapeHTML(t("app.name"))}</p><h1 id="view-title" tabindex="-1">${escapeHTML(t("manager.title"))}</h1><p class="lede">${escapeHTML(t("manager.lede"))}</p>`;
-  if (!state.completedAt) {
-    return `<section class="page-shell" aria-labelledby="view-title">${head}<div class="empty-state"><p>${escapeHTML(t("manager.empty"))}</p>${routeLink("start", t("nav.overview"), "button-secondary")}</div></section>`;
-  }
+  const profiles = listProfiles(state);
+  const back = state.activeId ? "home" : "welcome";
+  const head = `<h1 id="view-title" tabindex="-1">${escapeHTML(t("manager.title"))}</h1><p class="lede">${escapeHTML(t("manager.lede"))}</p>`;
+  if (!profiles.length) return `<section class="page-shell manager" aria-labelledby="view-title">${head}<div class="empty-state"><p>${escapeHTML(t("manager.empty"))}</p></div>${routeLink(back, t("manager.back"), "button-secondary")}</section>`;
+  return `<section class="page-shell manager" aria-labelledby="view-title">${head}<table class="roster"><caption class="visually-hidden">${escapeHTML(t("manager.roster"))}</caption><thead><tr><th scope="col">${escapeHTML(t("manager.name"))}</th><th scope="col">${escapeHTML(t("manager.progress"))}</th><th scope="col">${escapeHTML(t("manager.dialogue"))}</th><th scope="col">${escapeHTML(t("manager.firstTry"))}</th><th scope="col">${escapeHTML(t("manager.completed"))}</th><th scope="col">${escapeHTML(t("manager.attestation"))}</th></tr></thead><tbody>${profiles.map(row).join("")}</tbody></table>${routeLink(back, t("manager.back"), "button-secondary")}</section>`;
+}
 
-  const dialogue = dialogueScore(state);
-  const modules = modulesSummary(state);
-  return `<section class="page-shell" aria-labelledby="view-title">${head}
-    <article class="card manager-card">
-      <h2>${escapeHTML(state.profile.name)}</h2>
-      <dl>
-        <dt>${escapeHTML(t("manager.completion"))}</dt><dd>${escapeHTML(progress(state))} %</dd>
-        <dt>${escapeHTML(t("manager.dialogueScore"))}</dt><dd>${escapeHTML(`${dialogue.best}/${dialogue.total} (${dialogue.pct} %)` )}</dd>
-        <dt>${escapeHTML(t("manager.modules"))}</dt><dd>${escapeHTML(`${modules.solved}/${modules.total}`)} · ${escapeHTML(t("manager.firstTry", { n: modules.firstTry, total: modules.total }))}</dd>
-        <dt>${escapeHTML(t("manager.completedOn"))}</dt><dd>${escapeHTML(formatDate(state.completedAt))}</dd>
-        <dt>${escapeHTML(t("manager.attestation"))}</dt><dd>${escapeHTML(t("manager.attestationReady"))} · ${routeLink("certificate", t("manager.open"), "button-secondary")}</dd>
-      </dl>
-    </article>
-  </section>`;
+function row(profile) {
+  const dialogue = dialogueScore(profile);
+  const modules = modulesSummary(profile);
+  const completed = profile.completedAt ? formatDate(profile.completedAt) : t("manager.none");
+  const ready = profile.completedAt ? t("manager.attestationReady") : t("manager.none");
+  const cell = (label, value) => `<td><span class="stack-label visually-hidden">${escapeHTML(label)}</span>${escapeHTML(value)}</td>`;
+  return `<tr>${cell(t("manager.name"), profile.name)}${cell(t("manager.progress"), `${progress(profile)}%`)}${cell(t("manager.dialogue"), `${dialogue.best}/${dialogue.total}`)}${cell(t("manager.firstTry"), `${modules.firstTry}/${modules.total}`)}${cell(t("manager.completed"), completed)}${cell(t("manager.attestation"), ready)}</tr>`;
 }

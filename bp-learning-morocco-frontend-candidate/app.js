@@ -1,264 +1,206 @@
-import { loadState, saveState, progress, isComplete } from "./state.js";
+import { loadState, saveState, createProfile, setActive, activeProfile, resetProfile, isComplete, nextRoute } from "./state.js";
 import { t, setLang, getLang } from "./i18n.js";
 import { content } from "./fixtures.js";
-import { escapeHTML } from "./views/shared.js";
-import * as audio from "./audio.js";
-import * as start from "./views/start.js";
-import * as prep from "./views/prep.js";
+import { escapeHTML, icon } from "./views/shared.js";
+import * as welcome from "./views/welcome.js";
+import * as home from "./views/home.js";
 import * as simulation from "./views/simulation.js";
-import * as result from "./views/result.js";
-import * as modules from "./views/modules.js";
-import * as plan from "./views/plan.js";
-import * as certificate from "./views/certificate.js";
+import * as checks from "./views/checks.js";
+import * as summary from "./views/summary.js";
 import * as manager from "./views/manager.js";
-import * as onboarding from "./views/onboarding.js";
+import * as audio from "./audio.js";
 
-const VIEWS = { onboarding, start, prep, simulation, result, modules, plan, certificate, manager };
+const VIEWS = { welcome, home, simulation, checks, summary, manager };
 const storage = window.localStorage;
+const sessionKey = "bp-session";
 let { state, volatile } = loadState(storage);
-const ui = { typing: false, revealedTurn: -1, feedbackTurn: null, typingTimer: 0, onboardingStep: 0, moduleAttempt: {}, moduleRetry: {}, scenarioOpen: window.matchMedia("(min-width: 721px)").matches };
-setLang(state.profile.lang);
-if (!saveState(storage, state)) volatile = true;
+const ui = { adding: false, nameDraft: "", typing: false, revealedTurn: -1, feedbackTurn: null, typingTimer: 0, checkIndex: 0, checkAttempt: {}, checkRetry: {} };
+
+function readSession() {
+  try { return window.sessionStorage.getItem(sessionKey); } catch { return null; }
+}
+
+function writeSession(value) {
+  try { if (value) window.sessionStorage.setItem(sessionKey, value); else window.sessionStorage.removeItem(sessionKey); } catch { /* local-only mode can continue */ }
+}
+
+const sessionId = readSession();
+if (Object.keys(state.profiles).length) {
+  if (sessionId && state.profiles[sessionId]) setActive(state, sessionId);
+  else state.activeId = null;
+}
+setLang(activeProfile(state)?.lang ?? (typeof navigator !== "undefined" && navigator.language?.toLowerCase().startsWith("ar") ? "ar" : "fr"));
 
 function route() {
-  const value = location.hash.replace(/^#/, "");
-  const requested = VIEWS[value] ? value : "start";
-  if (!state.profile.name && requested !== "onboarding" && requested !== "manager") {
-    location.replace("#onboarding");
-    return "onboarding";
+  const raw = location.hash.replace(/^#/, "");
+  const aliases = { onboarding: "welcome", start: "home", prep: "simulation", result: "checks", modules: "checks", plan: "summary", certificate: "summary" };
+  const requested = aliases[raw] ?? (VIEWS[raw] ? raw : "home");
+  if (requested !== raw) location.replace(`#${requested}`);
+  if (requested !== "manager" && !activeProfile(state)) {
+    if (requested !== "welcome") location.replace("#welcome");
+    return "welcome";
   }
-  if (state.profile.name && requested === "onboarding") {
-    location.replace("#start");
-    return "start";
+  if (requested === "welcome" && activeProfile(state) && !ui.adding) { location.replace("#home"); return "home"; }
+  if (requested === "summary" && activeProfile(state) && !isComplete(activeProfile(state))) {
+    const next = nextRoute(activeProfile(state));
+    location.replace(`#${next}`);
+    return next;
   }
   return requested;
 }
 
-function go(nextRoute) { location.hash = nextRoute; }
+function go(next) { location.hash = next; }
 
 function save() {
-  if (isComplete(state) && !state.completedAt) state.completedAt = new Date().toISOString();
+  const profile = activeProfile(state);
+  if (profile && isComplete(profile) && !profile.completedAt) profile.completedAt = new Date().toISOString();
   if (!saveState(storage, state)) volatile = true;
 }
 
 function renderHeader(activeRoute) {
-  const pct = progress(state);
-  const name = state.profile.name;
-  document.querySelector("[data-skip]").textContent = t("app.skip");
-  document.title = t("app.name");
-  const brand = `<a class="brand" href="#start"><span class="brand-mark" aria-hidden="true">BP</span><span><strong>${escapeHTML(t("app.name"))}</strong><small>${escapeHTML(t("app.tagline"))}</small></span></a>`;
   const header = document.querySelector("[data-header]");
-  if (activeRoute === "onboarding") {
-    header.innerHTML = brand;
-    const onboardingBanner = document.querySelector("[data-banner]");
-    onboardingBanner.hidden = !volatile;
-    onboardingBanner.textContent = volatile ? t("app.storageVolatile") : "";
-    return;
-  }
-  header.innerHTML = `${brand}
-    <nav aria-label="${escapeHTML(t("nav.overview"))}">
-      <a href="#start" ${activeRoute === "start" ? "aria-current=\"page\"" : ""}>${escapeHTML(t("nav.overview"))}</a>
-      <a href="#simulation" ${activeRoute === "simulation" ? "aria-current=\"page\"" : ""}>${escapeHTML(t("nav.simulation"))}</a>
-      <a href="#plan" ${activeRoute === "plan" ? "aria-current=\"page\"" : ""}>${escapeHTML(t("nav.plan"))}</a>
-    </nav>
-    <div class="header-progress"><progress max="100" value="${escapeHTML(pct)}" aria-label="${escapeHTML(t("nav.progress", { pct }))}"></progress><span class="chip" data-chip hidden aria-hidden="true">${escapeHTML(t("chip.plusOne"))}</span></div>
-    <label class="lang-switch"><span class="visually-hidden">${escapeHTML(t("nav.language"))}</span><select data-action="lang-switch"><option value="fr" ${getLang() === "fr" ? "selected" : ""}>${escapeHTML(t("lang.fr"))}</option><option value="ar" ${getLang() === "ar" ? "selected" : ""}>${escapeHTML(t("lang.ar"))}</option></select></label>
-    ${name ? `<a class="profile-button" href="#plan" aria-label="${escapeHTML(t("nav.profile", { name }))}"><span aria-hidden="true">${escapeHTML(name.slice(0, 1).toUpperCase())}</span><span>${escapeHTML(name)}</span></a>` : ""}`;
+  const profile = activeProfile(state);
+  const visible = ["welcome", "home", "summary", "manager"].includes(activeRoute);
   const banner = document.querySelector("[data-banner]");
   banner.hidden = !volatile;
   banner.textContent = volatile ? t("app.storageVolatile") : "";
+  header.hidden = !visible;
+  document.querySelector("[data-skip]").textContent = t("app.skip");
+  document.title = t("app.name");
+  if (!visible) { header.innerHTML = ""; return; }
+  const brand = `<a class="brand" href="#home"><span class="brand-mark" aria-hidden="true">${icon("check")}</span><strong>${escapeHTML(t("app.name"))}</strong></a>`;
+  const otherLang = getLang() === "fr" ? t("lang.ar") : t("lang.fr");
+  const account = profile ? `<details class="account-menu"><summary aria-label="${escapeHTML(t("nav.account", { name: profile.name }))}"><span class="profile-initial header-initial">${escapeHTML(profile.name.slice(0, 1).toUpperCase())}</span><span class="account-name">${escapeHTML(profile.name)}</span></summary><div class="account-panel"><strong>${escapeHTML(profile.name)}</strong><small>${escapeHTML(t("welcome.local"))}</small><button type="button" data-action="switch-profile">${escapeHTML(t("menu.switch"))}</button><a href="#manager">${escapeHTML(t("nav.manager"))}</a><button type="button" data-action="reset-confirm">${escapeHTML(t("menu.reset"))}</button></div></details>` : "";
+  header.innerHTML = `${brand}<div class="header-end">${activeRoute === "welcome" ? "" : `<button class="header-lang" type="button" data-action="toggle-lang" aria-label="${escapeHTML(t("nav.language"))}">${escapeHTML(otherLang)}</button>`}${account}</div>${profile ? `<dialog data-reset-dialog><form method="dialog"><h2>${escapeHTML(t("menu.reset"))}</h2><p>${escapeHTML(t("plan.resetConfirmBody"))}</p><div class="button-row"><button class="button button-secondary" value="cancel">${escapeHTML(t("plan.resetCancel"))}</button><button class="button button-primary" value="confirm" data-action="reset-profile">${escapeHTML(t("plan.resetConfirm"))}</button></div></form></dialog>` : ""}`;
 }
 
 function focusSelector(element) {
   if (!element?.dataset?.action) return "";
-  return ["data-action", "data-id", "data-module", "data-index"]
-    .filter((attribute) => element.hasAttribute(attribute))
-    .map((attribute) => `[${attribute}="${CSS.escape(element.getAttribute(attribute))}"]`)
-    .join("");
+  return `[data-action="${CSS.escape(element.dataset.action)}"]${element.dataset.id ? `[data-id="${CSS.escape(element.dataset.id)}"]` : ""}${element.dataset.index ? `[data-index="${CSS.escape(element.dataset.index)}"]` : ""}`;
 }
 
 async function speak(turn) {
-  const button = document.querySelector('[data-action="listen"]');
   const element = document.querySelector("[data-audio]");
+  const button = document.querySelector('[data-action="listen"]');
   const text = content(getLang()).dialogue[turn]?.text ?? "";
   button?.setAttribute("aria-busy", "true");
-  try {
-    await audio.play(element, text, getLang());
-  } finally {
-    button?.removeAttribute("aria-busy");
-  }
+  try { await audio.play(element, text, getLang()); } finally { button?.removeAttribute("aria-busy"); }
 }
 
 function afterRender(activeRoute) {
-  if (activeRoute !== "simulation") return;
-  const currentContent = content(getLang());
-  const index = state.dialogueAnswers.length;
-  if (index >= currentContent.dialogue.length || ui.feedbackTurn !== null || ui.typing || ui.revealedTurn >= index) {
-    document.querySelector("[data-thread]")?.scrollTo(0, 99999);
-    return;
-  }
-  const previousReveal = ui.revealedTurn;
-  ui.typing = true;
-  render();
-  if (document.activeElement === document.body) document.querySelector("[data-thread]")?.focus({ preventScroll: true });
-  ui.typingTimer = setTimeout(async () => {
-    ui.typingTimer = 0;
-    if (route() !== "simulation" || ui.revealedTurn !== previousReveal || !ui.typing) return;
-    ui.typing = false;
-    ui.revealedTurn = index;
+  const profile = activeProfile(state);
+  if (!profile) return;
+  if (activeRoute === "simulation") {
+    const D = content(getLang()).dialogue;
+    const index = profile.dialogueAnswers.length;
+    if (index >= D.length && ui.feedbackTurn === null) { go("checks"); return; }
+    if (ui.feedbackTurn !== null || ui.typing || ui.revealedTurn >= index) return;
+    const previousReveal = ui.revealedTurn;
+    ui.typing = true;
     render();
-    const active = document.activeElement;
-    if (!active || active === document.body || active.closest("[data-main]")) document.querySelector('[data-action="choose"][data-index="0"]')?.focus();
-    await speak(index);
-  }, 900 + Math.round((Math.random() - 0.5) * 400));
+    ui.typingTimer = window.setTimeout(async () => {
+      ui.typingTimer = 0;
+      if (route() !== "simulation" || ui.revealedTurn !== previousReveal || !ui.typing) return;
+      ui.typing = false;
+      ui.revealedTurn = index;
+      render();
+      const active = document.activeElement;
+      if (!active || active === document.body || active.closest("[data-main]")) document.querySelector('[data-action="choose"][data-index="0"]')?.focus({ preventScroll: true });
+      await speak(index);
+    }, 900 + Math.round((Math.random() - 0.5) * 400));
+  }
 }
 
 let lastRoute = null;
-let lastPct = progress(state);
-
-function renderFooter(activeRoute) {
-  const footer = document.querySelector("[data-footer]");
-  footer.hidden = activeRoute === "onboarding";
-  footer.innerHTML = `<span>${escapeHTML(t("app.savedLocally"))}</span><a class="quiet-link" href="#manager" ${activeRoute === "manager" ? "aria-current=\"page\"" : ""}>${escapeHTML(t("nav.manager"))}</a>`;
-}
-
 function render() {
-  const activeFocusSelector = focusSelector(document.activeElement);
-  const focusWasInHeader = Boolean(document.activeElement?.closest?.("[data-header]"));
+  const currentFocus = focusSelector(document.activeElement);
   const activeRoute = route();
-  const routeChanged = activeRoute !== lastRoute;
-  if (routeChanged) {
-    audio.stop();
-    clearTimeout(ui.typingTimer);
-    ui.typingTimer = 0;
-    ui.typing = false;
-    ui.feedbackTurn = null;
-  }
+  const changed = activeRoute !== lastRoute;
+  if (changed) { audio.stop(); clearTimeout(ui.typingTimer); ui.typingTimer = 0; ui.typing = false; ui.feedbackTurn = null; }
   renderHeader(activeRoute);
-  renderFooter(activeRoute);
   document.querySelector("[data-main]").innerHTML = VIEWS[activeRoute].render(state, ui);
-  document.querySelectorAll("[data-pct]").forEach((element) => element.style.setProperty("--pct", `${element.dataset.pct}%`));
   const focusTarget = document.querySelector("[data-focus]");
-  if (focusWasInHeader && !routeChanged && activeFocusSelector) document.querySelector(activeFocusSelector)?.focus();
-  else if (focusTarget) {
-    focusTarget.focus({ preventScroll: true });
-    focusTarget.closest(".feedback-bar")?.scrollIntoView({ block: "nearest", behavior: "instant" });
-  }
-  else if (routeChanged) document.getElementById("view-title")?.focus({ preventScroll: true });
-  else if (activeFocusSelector) document.querySelector(activeFocusSelector)?.focus();
-  const pct = progress(state);
-  if (pct > lastPct) popChip();
-  lastPct = pct;
+  if (focusTarget) focusTarget.focus({ preventScroll: true });
+  else if (currentFocus && !changed) document.querySelector(currentFocus)?.focus({ preventScroll: true });
+  else if (changed) document.getElementById("view-title")?.focus({ preventScroll: true });
+  if (activeRoute === "simulation" || document.querySelector("[data-feedback-bar]")) window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" });
   lastRoute = activeRoute;
   afterRender(activeRoute);
 }
 
-function popChip() {
-  const chip = document.querySelector("[data-chip]");
-  if (!chip) return;
-  chip.hidden = false;
-  chip.classList.add("chip-pop");
-  setTimeout(() => { chip.hidden = true; chip.classList.remove("chip-pop"); }, 1400);
-}
+document.addEventListener("input", (event) => {
+  const input = event.target.closest("#name");
+  if (!input) return;
+  ui.nameDraft = input.value;
+  const submit = input.form?.querySelector('[type="submit"]');
+  if (submit) submit.disabled = !input.value.trim();
+});
 
 document.addEventListener("click", (event) => {
+  const menu = event.target.closest(".account-menu");
+  if (!menu) document.querySelectorAll(".account-menu[open]").forEach((item) => { item.open = false; });
   const element = event.target.closest("[data-action]");
   if (!element) return;
-  const currentContent = content(getLang());
+  const profile = activeProfile(state);
   switch (element.dataset.action) {
-    case "choose-lang":
-      state.profile.lang = element.dataset.lang;
-      setLang(state.profile.lang);
-      save();
-      ui.onboardingStep = 1;
+    case "set-lang":
+    case "toggle-lang": {
+      const next = element.dataset.lang ?? (getLang() === "fr" ? "ar" : "fr");
+      setLang(next);
+      if (profile) { profile.lang = next; save(); }
       render();
       return;
-    case "toggle-scenario":
-      ui.scenarioOpen = !element.closest("details").open;
+    }
+    case "add-profile": ui.adding = true; ui.nameDraft = ""; render(); return;
+    case "cancel-add": ui.adding = false; ui.nameDraft = ""; render(); return;
+    case "pick-profile":
+      if (setActive(state, element.dataset.id)) { writeSession(state.activeId); setLang(activeProfile(state).lang); save(); go(nextRoute(activeProfile(state))); }
       return;
     case "choose": {
-      const index = state.dialogueAnswers.length;
-      if (index >= currentContent.dialogue.length || ui.feedbackTurn !== null || ui.typing || ui.revealedTurn < index) return;
-      state.dialogueAnswers.push(Number(element.dataset.index));
+      if (!profile) return;
+      const index = profile.dialogueAnswers.length;
+      const D = content(getLang()).dialogue;
+      if (ui.typing || ui.feedbackTurn !== null || index >= D.length || ui.revealedTurn < index) return;
+      profile.dialogueAnswers.push(Number(element.dataset.index));
       ui.feedbackTurn = index;
       save();
       render();
       return;
     }
-    case "continue-dialogue":
-      ui.feedbackTurn = null;
+    case "continue-dialogue": ui.feedbackTurn = null; render(); return;
+    case "to-checks": ui.feedbackTurn = null; go("checks"); return;
+    case "listen": audio.stop(); speak(Number(element.dataset.turn)); return;
+    case "answer-check": {
+      if (!profile) return;
+      const modules = content(getLang()).modules;
+      const requested = Number.isInteger(ui.checkIndex) ? modules[ui.checkIndex] : null;
+      const index = requested && !profile.modules[requested.id]?.solved ? ui.checkIndex : modules.findIndex((item) => !profile.modules[item.id]?.solved);
+      const module = modules[index];
+      if (!module || profile.modules[module.id]?.solved || ui.checkRetry[module.id] !== true && ui.checkAttempt[module.id] !== undefined) return;
+      const answer = Number(element.dataset.index);
+      if (!profile.modules[module.id]) profile.modules[module.id] = { first: answer, solved: answer === module.correct };
+      else profile.modules[module.id].solved = answer === module.correct;
+      ui.checkAttempt[module.id] = answer;
+      ui.checkRetry[module.id] = false;
+      save();
       render();
       return;
-    case "listen":
-      audio.stop();
-      speak(Number(element.dataset.turn));
-      return;
-    case "print":
-      window.print();
-      return;
-    case "see-result":
-      ui.feedbackTurn = null;
-      go("result");
-      return;
+    }
+    case "retry-check": ui.checkRetry[element.dataset.module] = true; delete ui.checkAttempt[element.dataset.module]; render(); document.querySelector('[data-action="answer-check"]')?.focus(); return;
+    case "next-check": ui.checkIndex += 1; render(); return;
+    case "to-summary": go("summary"); return;
+    case "print": window.print(); return;
     case "restart-dialogue":
-      state.dialogueAnswers = [];
-      state.completedAt = null;
-      clearTimeout(ui.typingTimer);
-      ui.typingTimer = 0;
-      ui.typing = false;
-      ui.revealedTurn = -1;
-      ui.feedbackTurn = null;
-      save();
-      render();
+      if (profile) { profile.dialogueAnswers = []; profile.completedAt = null; save(); }
+      ui.revealedTurn = -1; ui.feedbackTurn = null; ui.typing = false; go("simulation");
       return;
-    case "answer-module": {
-      const id = element.dataset.module;
-      const index = Number(element.dataset.index);
-      const definition = currentContent.modules.find((module) => module.id === id);
-      if (!definition) return;
-      const record = state.modules[id];
-      if (record?.solved || (record && !record.solved && ui.moduleRetry[id] !== true)) return;
-      const nextRecord = record ?? { first: index, solved: false };
-      nextRecord.solved = nextRecord.solved || index === definition.correct;
-      state.modules[id] = nextRecord;
-      ui.moduleAttempt[id] = index;
-      ui.moduleRetry[id] = false;
-      save();
-      render();
-      const moduleBarButton = document.querySelector(`[data-module-card="${CSS.escape(id)}"] [data-feedback-bar] button`);
-      moduleBarButton?.focus({ preventScroll: true });
-      moduleBarButton?.closest(".feedback-bar")?.scrollIntoView({ block: "nearest", behavior: "instant" });
+    case "switch-profile": state.activeId = null; writeSession(null); ui.adding = false; go("welcome"); return;
+    case "reset-confirm": document.querySelector("[data-reset-dialog]")?.showModal(); return;
+    case "reset-profile":
+      if (profile) { resetProfile(state, profile.id); writeSession(profile.id); save(); }
+      ui.revealedTurn = -1; ui.feedbackTurn = null; ui.typing = false; go("simulation");
       return;
-    }
-    case "retry-module":
-      ui.moduleRetry[element.dataset.module] = true;
-      delete ui.moduleAttempt[element.dataset.module];
-      render();
-      document.querySelector(`[data-module-card="${element.dataset.module}"] [data-action="answer-module"]`)?.focus();
-      return;
-    case "focus-next-module": {
-      const cards = [...document.querySelectorAll("[data-module-card]")];
-      const current = cards.findIndex((card) => card.dataset.module === element.dataset.module);
-      const next = cards.slice(current + 1).find((card) => card.querySelector("[data-action=\"answer-module\"]:not([disabled])"));
-      if (next) next.querySelector("[data-action=\"answer-module\"]")?.focus();
-      else go("plan");
-      return;
-    }
-    case "reset-confirm":
-      document.querySelector("[data-reset-dialog]")?.showModal();
-      return;
-    case "reset-all":
-      state = loadState({ getItem: () => null }).state;
-      ui.onboardingStep = 0;
-      ui.revealedTurn = -1;
-      ui.feedbackTurn = null;
-      ui.moduleAttempt = {};
-      ui.moduleRetry = {};
-      setLang(state.profile.lang);
-      save();
-      if (location.hash === "#start") render();
-      else go("start");
-      return;
+    default: return;
   }
 });
 
@@ -266,50 +208,21 @@ document.addEventListener("submit", (event) => {
   const form = event.target.closest('[data-action="save-name"]');
   if (!form) return;
   event.preventDefault();
-  const input = form.elements.name;
-  const name = input.value.trim().slice(0, 40);
-  if (!name) {
-    input.setCustomValidity(" ");
-    input.reportValidity();
-    input.setCustomValidity("");
-    input.focus();
-    return;
-  }
-  state.profile.name = name;
-  save();
-  ui.onboardingStep = 0;
-  go("start");
-});
-
-document.addEventListener("change", (event) => {
-  const element = event.target.closest("[data-action]");
-  if (!element) return;
-  if (element.dataset.action === "prep-toggle") {
-    const id = element.dataset.id;
-    state.prep = element.checked ? [...new Set([...state.prep, id])] : state.prep.filter((item) => item !== id);
-    save();
-    render();
-  }
-  if (element.dataset.action === "lang-switch") {
-    audio.stop();
-    clearTimeout(ui.typingTimer);
-    ui.typingTimer = 0;
-    ui.typing = false;
-    ui.revealedTurn = -1;
-    state.profile.lang = element.value;
-    setLang(element.value);
-    save();
-    render();
-  }
+  const name = form.elements.name.value.trim().slice(0, 40);
+  if (!name) { form.elements.name.focus(); return; }
+  const id = createProfile(state, name, getLang());
+  if (!id) { document.querySelector("[data-name-alert]")?.removeAttribute("hidden"); return; }
+  writeSession(id); save(); ui.adding = false; ui.nameDraft = ""; go("simulation");
 });
 
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") { document.querySelectorAll(".account-menu[open]").forEach((menu) => { menu.open = false; menu.querySelector("summary")?.focus(); }); return; }
   if (event.target.matches("input, select, textarea") || event.altKey || event.ctrlKey || event.metaKey) return;
-  if (route() === "simulation" && /^[1-3]$/.test(event.key)) {
-    const button = document.querySelector(`[data-action="choose"][data-index="${Number(event.key) - 1}"]`);
-    if (button) { event.preventDefault(); button.click(); }
-  }
+  if (!["simulation", "checks"].includes(route()) || !/^[1-3]$/.test(event.key)) return;
+  const action = route() === "simulation" ? "choose" : "answer-check";
+  const button = document.querySelector(`[data-action="${action}"][data-index="${Number(event.key) - 1}"]`);
+  if (button) { event.preventDefault(); button.click(); }
 });
 
-window.addEventListener("hashchange", () => render());
+window.addEventListener("hashchange", render);
 render();

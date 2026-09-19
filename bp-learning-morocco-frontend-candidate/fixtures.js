@@ -41,6 +41,7 @@ export const CONTENT = Object.freeze({ fr: {
       ],
       best: 0,
       feedback: "La question laisse la personne choisir la langue qui lui convient.",
+      reactions: { good: "Oui, en français simple, ça me va très bien.", almost: "Euh… je ne sais pas trop quoi répondre." },
     },
     {
       speaker: "customer",
@@ -52,6 +53,7 @@ export const CONTENT = Object.freeze({ fr: {
       ],
       best: 0,
       feedback: "Une seule étape réduit la charge et rend la compréhension observable.",
+      reactions: { good: "D'accord, une étape à la fois, c'est plus clair.", almost: "Ah… je me sens un peu bête, du coup." },
     },
     {
       speaker: "customer",
@@ -63,6 +65,7 @@ export const CONTENT = Object.freeze({ fr: {
       ],
       best: 0,
       feedback: "Le résumé soutient la transmission et la limite professionnelle reste claire.",
+      reactions: { good: "Merci, un petit résumé m'aidera pour ma mère.", almost: "Je ne suis pas sûre de pouvoir lui réexpliquer." },
     },
   ],
   modules: [
@@ -140,6 +143,7 @@ export const CONTENT = Object.freeze({ fr: {
       ],
       best: 0,
       feedback: "يتيح السؤال للزبونة اختيار اللغة المناسبة لها.",
+      reactions: { good: "نعم، الفرنسية البسيطة تناسبني جيدًا.", almost: "حسنًا… لا أعرف حقًا ماذا أجيب." },
     },
     {
       speaker: "customer",
@@ -151,6 +155,7 @@ export const CONTENT = Object.freeze({ fr: {
       ],
       best: 0,
       feedback: "يساعد عرض خطوة واحدة على تقليل العبء وملاحظة الفهم.",
+      reactions: { good: "حسنًا، خطوة واحدة في كل مرة أوضح لي.", almost: "آه… أشعر بالحرج قليلًا الآن." },
     },
     {
       speaker: "customer",
@@ -162,6 +167,7 @@ export const CONTENT = Object.freeze({ fr: {
       ],
       best: 0,
       feedback: "يساعد الملخص على نقل المعلومات، وتبقى الحدود المهنية واضحة.",
+      reactions: { good: "شكرًا، سيساعدني ملخص صغير لأشرح لأمي.", almost: "لست متأكدة من قدرتي على شرح ذلك لها." },
     },
   ],
   modules: [

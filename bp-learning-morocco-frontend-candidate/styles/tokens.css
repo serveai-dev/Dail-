@@ -53,19 +53,20 @@
 }
 
 :root {
-  --bg: #F6FAF8;
+  --bg: #F7F5F0;
   --surface: #FFFFFF;
-  --text: #14211C;
-  --muted: #4F6259;
-  --border: #D7E2DC;
-  --primary: #1B7A5E;
-  --primary-strong: #145F49;
-  --primary-soft: #E3F2EB;
-  --attention: #B45309;
-  --attention-soft: #FEF3E2;
-  --attention-ink: #7A3806;
+  --surface-2: #EFECE5;
+  --text: #1B1F1D;
+  --muted: #545C57;
+  --border: #E3DED4;
+  --primary: #0E6A4E;
+  --primary-strong: #0A5039;
+  --primary-soft: #E4F0EA;
+  --attention: #8F4500;
+  --attention-soft: #FCEFDD;
+  --attention-ink: #6B3300;
   --focus: #0B5FFF;
-  --radius: 14px;
+  --radius: 16px;
   --radius-sm: 10px;
   --space-1: 4px;
   --space-2: 8px;
@@ -74,7 +75,7 @@
   --space-5: 24px;
   --space-6: 32px;
   --space-7: 48px;
-  --shadow: 0 1px 2px rgb(20 33 28 / .06), 0 4px 16px rgb(20 33 28 / .06);
+  --shadow: 0 1px 2px rgb(27 31 29 / .05), 0 8px 24px rgb(27 31 29 / .06);
   --font: 'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,'Segoe UI',Tahoma,sans-serif;
   --fs-small: 15px;
   --fs-body: 18px;
@@ -104,6 +105,24 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3 { text-wrap: balance; }
+p, li, dd { text-wrap: pretty; }
+progress, table, .seg, [data-count] { font-variant-numeric: tabular-nums; }
+
+button, .button {
+  transition-property: transform, background-color, border-color, box-shadow, color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+button:active:not(:disabled), .button:active { transform: scale(0.97); }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  button:active:not(:disabled), .button:active { transform: none; }
 }
 
 body {
@@ -121,7 +140,8 @@ h3 {
   margin-block-start: 0;
 }
 
-h1 { font-size: var(--fs-h1); }
+h1 { font-size: var(--fs-h1); line-height: 1.15; letter-spacing: -0.01em; font-weight: 600; }
+:lang(ar) h1 { letter-spacing: 0; line-height: 1.4; }
 h2 { font-size: var(--fs-h2); }
 h3 { font-size: var(--fs-h3); }
 
