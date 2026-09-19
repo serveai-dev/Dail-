@@ -33,7 +33,25 @@ All people and dialogue are synthetic. The exercise trains communication habits 
 
 Uxcel was chosen because it is the one reference where teaching and testing share a screen, and its structure maps one to one onto the routes here.
 
-## What changed
+## Version 2: login, lesson player, fewer clicks
+
+**Login (local profiles).** First visit: one question, "Comment vous appelez-vous ?". Type your first name and press Enter, and the customer starts talking. The language is detected from the browser and can be switched on the same screen. Return visit: "Qui s'entraîne aujourd'hui ?" shows one avatar per person on this device. One tap resumes the exact step. Several employees can share one pharmacy computer (up to 12 profiles). Switch person or restart from the avatar menu in the header.
+
+This is a **local profile, not a secure account**. Anyone using the device can open any profile. A PIN was left out on purpose: it would add four keystrokes to every visit and protect nothing, because the browser storage can be read on the device. A real deployment would add pharmacy SSO or an SMS code, and a server.
+
+**Lesson player.** The dialogue and the three questions run full-screen: a close button, a 6-segment progress track, one thing at a time. After each answer a bar docks to the bottom of the screen. It shows the customer's reaction in her own words, then why, then the recommended answer when needed. The preparation page is folded into the opening scene card. The result and plan pages are merged into a final "Bilan" that prints the attestation in one click.
+
+| Journey | Before | After |
+|---|---|---|
+| First open → first customer line | 4 clicks + name | type name + Enter, 0 clicks |
+| Return visit → exact step | 1 click, no identity | 1 tap on your avatar |
+| First open → printed attestation | 19 | 14 |
+
+References used for this version (Mobbin): profile picker, [Netflix](https://mobbin.com/screens/9b0cfc61-f627-4691-b3a8-b4ea35110aad) and [Disney+](https://mobbin.com/screens/03a1da42-606d-4186-8bdb-bb46b4cd72f3). Name step, [Bevel](https://mobbin.com/screens/f0217a83-5962-427f-96bd-385972f6c604). Feedback bar, [Duolingo](https://mobbin.com/screens/57d38f9d-5bee-42f9-96f8-85b05f3bf835). Roleplay recap, [Duolingo Max](https://mobbin.com/screens/35a6f682-bab6-4fc2-be70-b5fa58792795). Home, [Coursera "Continue learning"](https://mobbin.com/screens/93beef1d-a7ba-4f6c-9efb-4d13aee3eb76).
+
+Gaps in version 2: the customer reactions in Arabic were drafted by an AI model and still need a native reader. The old view files (`start`, `prep`, `result`, `modules`, `plan`, `certificate`, `onboarding`) are still in `views/` but are no longer used.
+
+## What changed (version 1)
 
 Route path: `onboarding → start → prep → simulation → result → modules → plan → certificate`, plus `manager`.
 
