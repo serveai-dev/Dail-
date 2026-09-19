@@ -1,6 +1,6 @@
 import { loadState, saveState, createProfile, setActive, activeProfile, resetProfile, isComplete, nextRoute, syncCourse } from "./state.js";
 import { t, setLang, getLang } from "./i18n.js";
-import { content, setActiveCourse, activeCourseData, activeCourseKey, isCustomCourse } from "./fixtures.js";
+import { content, setActiveCourse, activeCourseData, activeCourseKey, contentLang, audioBase } from "./fixtures.js";
 import { COURSE_STORAGE_KEY, parseCourseFile, validateCourse } from "./course.js";
 import { courseFromCSV, courseToCSV } from "./csv.js";
 import { isPinSet, verifyPin, setPin, resetAdmin, setAdminSession, isAdminSession, lockAdmin } from "./admin.js";
@@ -140,15 +140,17 @@ async function speak(target, button = null) {
   if (sameButton) { resetSpeaking(); return; }
   resetSpeaking();
   const text = sayText(target);
-  const element = document.querySelector("[data-audio]");
-  if (element && target.startsWith("dialogue:") && !isCustomCourse()) element.src = `audio/${getLang()}/turn-${Number(target.split(":")[1]) + 1}.mp3`;
+  const lang = contentLang(getLang());
+  const [kind, value] = String(target).split(":");
+  const element = document.querySelector("[data-audio]") ?? new Audio();
+  element.src = `${audioBase()}/${lang}/${kind === "check" ? "check" : "turn"}-${Number(value) + 1}.mp3`;
   if (button) { button.classList.add("playing"); button.setAttribute("aria-pressed", "true"); speakingButton = button; }
-  const result = await audio.play(element, text, getLang(), { allowMp3: !isCustomCourse() && target.startsWith("dialogue:") });
+  const result = await audio.play(element, text, lang, { allowMp3: true });
   if (button && result === "unavailable") {
     const status = document.createElement("span");
     status.className = "audio-status";
     status.setAttribute("role", "status");
-    status.textContent = t(getLang() === "ar" ? "audio.noVoice.ar" : "audio.noVoice.fr");
+    status.textContent = t(lang === "ar" ? "audio.noVoice.ar" : "audio.noVoice.fr");
     button.parentElement?.append(status);
     audioNoticeTimer = window.setTimeout(() => status.remove(), 6000);
   }

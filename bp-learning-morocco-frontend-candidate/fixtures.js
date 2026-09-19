@@ -229,3 +229,9 @@ export function content(lang) {
   if (!activeCourse) return CONTENT[lang] ?? CONTENT.fr;
   return activeCourse[lang] ?? activeCourse.fr;
 }
+export function contentLang(lang) {
+  return (activeCourse ?? CONTENT)[lang] ? lang : "fr";
+}
+export function audioBase() {
+  return activeCourse ? `audio/courses/${activeCourse.id}` : "audio";
+}
