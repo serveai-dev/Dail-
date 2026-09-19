@@ -15,7 +15,8 @@ function stateFor(name = "Nadia", overrides = {}) {
 
 test("welcome picker escapes profile names and first-run submit starts disabled", () => {
   const picker = welcome.render({ ...stateFor("<img src=x onerror=alert(1)>"), activeId: null }, { adding: false, nameDraft: "" });
-  assert.equal(picker.includes("<img"), false);
+  assert.equal(picker.includes("<img src=x"), false);
+  assert.equal(picker.includes("onerror=alert(1)>"), false);
   assert.ok(picker.includes("&lt;img src=x onerror=alert(1)&gt;"));
   const firstRun = welcome.render(DEFAULT, { adding: false, nameDraft: "" });
   assert.match(firstRun, /type="submit" disabled/);

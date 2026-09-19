@@ -12,6 +12,10 @@ export function render(state, ui) {
   return picker(profiles);
 }
 
+function art() {
+  return `<figure class="welcome-art" aria-hidden="true"><img src="images/welcome-pharmacy.jpg" alt="" width="736" height="1095" decoding="async" /></figure>`;
+}
+
 function languageToggle() {
   return `<div class="language-segment" role="group" aria-label="${escapeHTML(t("nav.language"))}">
     <button type="button" data-action="set-lang" data-lang="fr" lang="fr" aria-pressed="${getLang() === "fr" ? "true" : "false"}">${escapeHTML(t("lang.fr"))}</button>
@@ -20,7 +24,7 @@ function languageToggle() {
 }
 
 function form(ui) {
-  return `<section class="welcome page-shell" aria-labelledby="view-title">
+  return `<section class="welcome welcome-split page-shell" aria-labelledby="view-title">${art()}<div class="welcome-panel">
     ${languageToggle()}
     <div class="welcome-form-wrap">
       <h1 id="view-title" tabindex="-1">${escapeHTML(t("welcome.question"))}</h1>
@@ -34,16 +38,16 @@ function form(ui) {
         ${ui.adding ? `<button class="button button-quiet cancel-add" type="button" data-action="cancel-add">${escapeHTML(t("welcome.cancel"))}</button>` : ""}
       </form>
     </div>
-  </section>`;
+  </div></section>`;
 }
 
 function picker(profiles) {
-  return `<section class="welcome picker page-shell" aria-labelledby="view-title">
+  return `<section class="welcome welcome-split picker page-shell" aria-labelledby="view-title">${art()}<div class="welcome-panel">
     <div class="picker-heading"><h1 id="view-title" tabindex="-1">${escapeHTML(t("picker.title"))}</h1>${languageToggle()}</div>
     <div class="profile-grid">
       ${profiles.map((profile) => `<button class="profile-tile" type="button" data-action="pick-profile" data-id="${escapeHTML(profile.id)}"><span class="profile-initial ${tint(profile.id)}" translate="no">${escapeHTML(profile.name.slice(0, 1).toUpperCase())}</span><strong>${escapeHTML(profile.name)}</strong><small>${escapeHTML(t("picker.meta", { done: profile.dialogueAnswers.length + Object.values(profile.modules).filter((module) => module.solved).length, total: 6 }))}</small></button>`).join("")}
       <button class="profile-tile profile-add" type="button" data-action="add-profile"><span class="profile-initial add-initial">+</span><strong>${escapeHTML(t("picker.add"))}</strong><small>${escapeHTML(t("picker.newMeta"))}</small></button>
     </div>
     <a class="button button-quiet quiet-link" href="#admin">${icon("lock")}<span>${escapeHTML(t("admin.door"))}</span></a>
-  </section>`;
+  </div></section>`;
 }

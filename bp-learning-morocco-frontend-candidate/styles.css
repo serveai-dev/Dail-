@@ -279,3 +279,21 @@ dialog::backdrop { background: rgb(20 33 28 / .5); }
   .certificate dt { font-size: 10pt; text-transform: uppercase; letter-spacing: .08em; color: #545C57; }
   .certificate dd { font-size: 16pt; font-weight: 600; }
 }
+
+.view:has(> .welcome-split) { padding-block: clamp(12px, 2vw, 24px); }
+.welcome-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 72px); align-items: stretch; align-content: stretch; inline-size: min(100%, 1240px); min-block-size: calc(100vh - 68px - 48px); margin-inline: auto; padding-block-start: 0; }
+.welcome-art { margin: 0; overflow: hidden; border-radius: 28px; background: var(--surface-2, #EFECE5); box-shadow: var(--shadow); }
+.welcome-art img { display: block; inline-size: 100%; block-size: 100%; object-fit: cover; object-position: center 25%; }
+.welcome-panel { display: grid; align-content: center; gap: var(--space-4); inline-size: 100%; max-inline-size: 480px; margin-inline: auto; padding-block: var(--space-6); }
+.welcome-panel .language-segment { margin-block-end: var(--space-5); }
+.welcome-panel .welcome-form-wrap { inline-size: 100%; }
+.welcome-panel .welcome-form-wrap h1, .welcome-panel h1 { text-align: start; }
+.welcome-split.picker .picker-heading { flex-direction: column-reverse; align-items: stretch; }
+.welcome-split.picker .picker-heading .language-segment { align-self: flex-end; }
+.welcome-split .profile-grid { justify-content: start; }
+@media (max-width: 720px) {
+  .welcome-split { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); min-block-size: 0; }
+  .welcome-art { block-size: 190px; border-radius: 20px; }
+  .welcome-art img { object-position: center 20%; }
+  .welcome-panel { padding-block: 0 var(--space-5); }
+}
