@@ -1,50 +1,21 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" dir="ltr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self'; connect-src 'none'; img-src 'self' data:; style-src 'self'; script-src 'self'; font-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'"
-    />
-    <meta name="description" content="Entraînement interactif à la communication en pharmacie dans un contexte marocain fictif." />
-    <title>BP Learning | Entraînement à la communication</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'; font-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'" />
+    <meta name="description" content="Entraînement à la communication en pharmacie dans un contexte marocain fictif." />
+    <title>BP Learning</title>
     <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="styles/tokens.css" />
     <link rel="stylesheet" href="styles.css" />
-    <script src="fixtures.js" defer></script>
-    <script src="app.js" defer></script>
+    <script type="module" src="app.js"></script>
   </head>
   <body>
-    <a class="skip-link" href="#main">Aller au contenu</a>
-    <header class="site-header">
-      <a class="brand" href="#start" data-route="start" aria-label="Accueil BP Learning">
-        <span class="brand-mark" aria-hidden="true">BP</span>
-        <span>
-          <strong>BP Learning</strong>
-          <small>Plateforme d’apprentissage</small>
-        </span>
-      </a>
-      <nav aria-label="Navigation principale">
-        <a href="#start" data-route="start">Vue d’ensemble</a>
-        <a href="#vorbereitung" data-route="vorbereitung">Préparation</a>
-        <a href="#simulation" data-route="simulation">Simulation</a>
-        <a href="#lernplan" data-route="lernplan">Parcours</a>
-      </nav>
-      <button class="profile-button" type="button" data-route="lernplan" aria-label="Ouvrir le profil d’apprentissage fictif de Nadia">
-        <span aria-hidden="true">NA</span>
-        <span>Profil fictif</span>
-      </button>
-    </header>
-
-    <main id="main" tabindex="-1">
-      <section class="view" data-view="start" aria-labelledby="start-title"></section>
-      <section class="view" data-view="vorbereitung" aria-labelledby="prep-title" hidden></section>
-      <section class="view" data-view="simulation" aria-labelledby="sim-title" hidden></section>
-      <section class="view" data-view="abschluss" aria-labelledby="result-title" hidden></section>
-      <section class="view" data-view="lernplan" aria-labelledby="plan-title" hidden></section>
-    </main>
-
-    <div class="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
-    <noscript>JavaScript doit être activé pour utiliser l’entraînement.</noscript>
+    <a class="skip-link" href="#main" data-skip>Aller au contenu</a>
+    <header class="site-header" data-header></header>
+    <div class="banner" data-banner hidden></div>
+    <main id="main" class="view" tabindex="-1" data-main></main>
+    <noscript>JavaScript doit être activé pour utiliser l'entraînement.</noscript>
   </body>
 </html>

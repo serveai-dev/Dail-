@@ -1,5 +1,4 @@
-window.BP_FIXTURES = Object.freeze({
-  learner: { initials: "NA", displayName: "Nadia A. · profil fictif", context: "Équipe officinale · Casablanca" },
+export const CONTENT = Object.freeze({ fr: {
   course: {
     eyebrow: "Communication en pharmacie",
     title: "Mieux accueillir et expliquer en pharmacie",
@@ -26,6 +25,7 @@ window.BP_FIXTURES = Object.freeze({
     },
   ],
   scenario: {
+    initials: "CF",
     customer: "Cliente fictive · Casablanca",
     context: "Une cliente souhaite comprendre des consignes générales affichées dans l’espace conseil. Elle lit le français, mais préfère parfois une explication orale en darija.",
     goal: "Demande sa préférence, explique par étapes et vérifie ce qu’elle a compris, sans formuler de conseil clinique.",
@@ -65,7 +65,7 @@ window.BP_FIXTURES = Object.freeze({
       feedback: "Le résumé soutient la transmission et la limite professionnelle reste claire.",
     },
   ],
-  learningModules: [
+  modules: [
     {
       id: "preference",
       title: "Préférence linguistique",
@@ -74,6 +74,7 @@ window.BP_FIXTURES = Object.freeze({
       question: "Quelle question laisse réellement le choix ?",
       answers: ["Préférez-vous le français simple ou une explication orale en darija ?", "Vous parlez sûrement darija, n’est-ce pas ?", "Vous savez lire le français ?"],
       correct: 0,
+      explanation: "Poser la question laisse la personne choisir. Supposer sa langue ou son niveau de lecture peut la gêner.",
     },
     {
       id: "structure",
@@ -83,6 +84,7 @@ window.BP_FIXTURES = Object.freeze({
       question: "Quelle séquence aide le mieux à suivre ?",
       answers: ["Une étape · reformulation · étape suivante", "Tout le contenu · question à la fin", "Jargon · répétition · conclusion"],
       correct: 0,
+      explanation: "Une étape, puis une reformulation, puis l'étape suivante. La personne peut suivre et vous voyez ce qu'elle a compris.",
     },
     {
       id: "verification",
@@ -92,6 +94,9 @@ window.BP_FIXTURES = Object.freeze({
       question: "Quelle formulation respecte la personne ?",
       answers: ["Pour vérifier si j’ai été clair, comment résumeriez-vous la première étape ?", "Répétez exactement ce que je viens de dire.", "Vous avez compris, oui ou non ?"],
       correct: 0,
+      explanation: "Demander comment la personne résumerait l'étape vérifie votre explication, pas la personne. Les autres formulations la mettent à l'épreuve.",
     },
   ],
-});
+} });
+
+export function content(lang) { return CONTENT[lang] ?? CONTENT.fr; }
