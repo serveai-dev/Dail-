@@ -100,6 +100,7 @@ function afterRender(activeRoute) {
   const previousReveal = ui.revealedTurn;
   ui.typing = true;
   render();
+  if (document.activeElement === document.body) document.querySelector("[data-thread]")?.focus({ preventScroll: true });
   ui.typingTimer = setTimeout(async () => {
     ui.typingTimer = 0;
     if (route() !== "simulation" || ui.revealedTurn !== previousReveal || !ui.typing) return;
@@ -143,8 +144,8 @@ function render() {
     focusTarget.focus({ preventScroll: true });
     focusTarget.closest(".feedback-bar")?.scrollIntoView({ block: "nearest", behavior: "instant" });
   }
-  else if (activeFocusSelector) document.querySelector(activeFocusSelector)?.focus();
   else if (routeChanged) document.getElementById("view-title")?.focus({ preventScroll: true });
+  else if (activeFocusSelector) document.querySelector(activeFocusSelector)?.focus();
   const pct = progress(state);
   if (pct > lastPct) popChip();
   lastPct = pct;
