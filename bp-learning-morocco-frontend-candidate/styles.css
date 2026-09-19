@@ -1240,6 +1240,13 @@ dialog::backdrop {
 }
 
 @media (max-width: 520px) {
+  .lang-switch select {
+    padding-inline: 8px;
+    font-size: var(--fs-small);
+    inline-size: 104px;
+    min-block-size: 44px;
+  }
+
   .profile-button > span:last-child {
     display: none;
   }

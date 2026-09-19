@@ -2,6 +2,7 @@ import { loadState, saveState, progress, isComplete } from "./state.js";
 import { t, setLang, getLang } from "./i18n.js";
 import { content } from "./fixtures.js";
 import { escapeHTML } from "./views/shared.js";
+import * as audio from "./audio.js";
 import * as start from "./views/start.js";
 import * as prep from "./views/prep.js";
 import * as simulation from "./views/simulation.js";
@@ -12,7 +13,7 @@ import * as plan from "./views/plan.js";
 const VIEWS = { start, prep, simulation, result, modules, plan };
 const storage = window.localStorage;
 let { state, volatile } = loadState(storage);
-const ui = { typing: false, revealedTurn: -1, feedbackTurn: null, typingTimer: 0, onboardingStep: 0, moduleAttempt: {}, moduleRetry: {} };
+const ui = { typing: false, revealedTurn: -1, feedbackTurn: null, typingTimer: 0, onboardingStep: 0, moduleAttempt: {}, moduleRetry: {}, scenarioOpen: window.matchMedia("(min-width: 721px)").matches };
 setLang(state.profile.lang);
 if (!saveState(storage, state)) volatile = true;
 
@@ -56,6 +57,40 @@ function focusSelector(element) {
     .join("");
 }
 
+async function speak(turn) {
+  const button = document.querySelector('[data-action="listen"]');
+  const element = document.querySelector("[data-audio]");
+  const text = content(getLang()).dialogue[turn]?.text ?? "";
+  button?.setAttribute("aria-busy", "true");
+  try {
+    await audio.play(element, text, getLang());
+  } finally {
+    button?.removeAttribute("aria-busy");
+  }
+}
+
+function afterRender(activeRoute) {
+  if (activeRoute !== "simulation") return;
+  const currentContent = content(getLang());
+  const index = state.dialogueAnswers.length;
+  if (index >= currentContent.dialogue.length || ui.feedbackTurn !== null || ui.typing || ui.revealedTurn >= index) {
+    document.querySelector("[data-thread]")?.scrollTo(0, 99999);
+    return;
+  }
+  const previousReveal = ui.revealedTurn;
+  ui.typing = true;
+  render();
+  ui.typingTimer = setTimeout(async () => {
+    ui.typingTimer = 0;
+    if (route() !== "simulation" || ui.revealedTurn !== previousReveal || !ui.typing) return;
+    ui.typing = false;
+    ui.revealedTurn = index;
+    render();
+    document.querySelector('[data-action="choose"][data-index="0"]')?.focus();
+    await speak(index);
+  }, 900 + Math.round((Math.random() - 0.5) * 400));
+}
+
 let lastRoute = null;
 let lastPct = progress(state);
 
@@ -64,7 +99,9 @@ function render() {
   const activeRoute = route();
   const routeChanged = activeRoute !== lastRoute;
   if (routeChanged) {
+    audio.stop();
     clearTimeout(ui.typingTimer);
+    ui.typingTimer = 0;
     ui.typing = false;
     ui.feedbackTurn = null;
   }
@@ -79,6 +116,7 @@ function render() {
   if (pct > lastPct) popChip();
   lastPct = pct;
   lastRoute = activeRoute;
+  afterRender(activeRoute);
 }
 
 function popChip() {
@@ -94,9 +132,12 @@ document.addEventListener("click", (event) => {
   if (!element) return;
   const currentContent = content(getLang());
   switch (element.dataset.action) {
+    case "toggle-scenario":
+      ui.scenarioOpen = !element.closest("details").open;
+      return;
     case "choose": {
       const index = state.dialogueAnswers.length;
-      if (index >= currentContent.dialogue.length || ui.feedbackTurn !== null) return;
+      if (index >= currentContent.dialogue.length || ui.feedbackTurn !== null || ui.typing || ui.revealedTurn < index) return;
       state.dialogueAnswers.push(Number(element.dataset.index));
       ui.feedbackTurn = index;
       save();
@@ -107,6 +148,10 @@ document.addEventListener("click", (event) => {
       ui.feedbackTurn = null;
       render();
       return;
+    case "listen":
+      audio.stop();
+      speak(Number(element.dataset.turn));
+      return;
     case "see-result":
       ui.feedbackTurn = null;
       go("result");
@@ -114,6 +159,9 @@ document.addEventListener("click", (event) => {
     case "restart-dialogue":
       state.dialogueAnswers = [];
       state.completedAt = null;
+      clearTimeout(ui.typingTimer);
+      ui.typingTimer = 0;
+      ui.typing = false;
       ui.revealedTurn = -1;
       ui.feedbackTurn = null;
       save();
@@ -177,6 +225,11 @@ document.addEventListener("change", (event) => {
     render();
   }
   if (element.dataset.action === "lang-switch") {
+    audio.stop();
+    clearTimeout(ui.typingTimer);
+    ui.typingTimer = 0;
+    ui.typing = false;
+    ui.revealedTurn = -1;
     state.profile.lang = element.value;
     setLang(element.value);
     save();
