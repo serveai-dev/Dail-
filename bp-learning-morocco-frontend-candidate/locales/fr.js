@@ -26,7 +26,7 @@ export const fr = {
   "result.verdict.mid": "Une bonne base. Relisez les réponses recommandées ci-dessous.",
   "result.verdict.low": "Relisez les réponses recommandées, puis refaites l'échange.",
   "result.recap": "Récapitulatif", "result.yourAnswer": "Votre réponse", "result.recommendedAnswer": "Réponse recommandée",
-  "result.cta": "Passer aux vérifications", "result.redo": "Refaire la simulation", "result.steps": "étapes terminées sur {total}", "result.courseHint": "Utilisez les vérifications pour consolider chaque principe de communication.",
+  "result.cta": "Passer aux vérifications", "result.redo": "Refaire la simulation", "result.steps": "Réponses recommandées : {n} sur {total}", "result.courseHint": "Utilisez les vérifications pour consolider chaque principe de communication.",
   "modules.title": "Vérifications", "modules.lede": "Trois questions. En cas d'erreur, lisez l'explication et réessayez.",
   "modules.retry": "Réessayer", "modules.next": "Question suivante", "modules.done": "Voir mon parcours", "modules.solvedCount": "{done}/{total} réussies", "modules.choose": "Choisissez une réponse.",
   "plan.title": "Mon parcours", "plan.progress": "Progression", "plan.steps": "Étapes", "plan.certificate": "Voir l'attestation", "plan.certificateSoon": "L'attestation sera disponible très bientôt.",

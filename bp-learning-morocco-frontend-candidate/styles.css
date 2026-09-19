@@ -681,7 +681,7 @@ details.scenario-panel summary {
 }
 
 .message {
-  align-self: flex-start;
+  align-self: start;
   max-inline-size: 78%;
   padding-block: var(--space-3);
   padding-inline: var(--space-4);
@@ -695,7 +695,7 @@ details.scenario-panel summary {
 }
 
 .message.user {
-  align-self: flex-end;
+  align-self: end;
   color: var(--surface);
   background: var(--primary);
   border-color: var(--primary);
@@ -1059,7 +1059,13 @@ dialog::backdrop {
 }
 
 .onboarding form {
+  display: grid;
+  gap: var(--space-3);
   max-inline-size: 560px;
+}
+
+.onboarding form p {
+  margin-block: 0;
 }
 
 .onboarding label {
@@ -1070,6 +1076,7 @@ dialog::backdrop {
 
 .onboarding input {
   inline-size: 100%;
+  max-inline-size: 420px;
   min-block-size: 52px;
   padding-block: var(--space-2);
   padding-inline: var(--space-3);
@@ -1077,6 +1084,7 @@ dialog::backdrop {
   background: var(--surface);
   border: 2px solid var(--border);
   border-radius: var(--radius-sm);
+  font-size: var(--fs-body);
 }
 
 .onboarding input:focus {
@@ -1330,3 +1338,10 @@ dialog::backdrop {
     border-color: black;
   }
 }
+
+.lang-step { text-align: center; }
+.lang-step h1 { margin-block-end: var(--space-6); max-inline-size: none; }
+.lang-line { display: block; }
+.lang-step h1 .lang-line + .lang-line { margin-block-start: var(--space-1); }
+.lang-step .lang-cards { margin-block: 0 var(--space-5); max-width: 720px; margin-inline: auto; }
+.lang-step .lang-hint { margin-inline: auto; }

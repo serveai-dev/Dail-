@@ -9,8 +9,9 @@ import * as simulation from "./views/simulation.js";
 import * as result from "./views/result.js";
 import * as modules from "./views/modules.js";
 import * as plan from "./views/plan.js";
+import * as onboarding from "./views/onboarding.js";
 
-const VIEWS = { start, prep, simulation, result, modules, plan };
+const VIEWS = { onboarding, start, prep, simulation, result, modules, plan };
 const storage = window.localStorage;
 let { state, volatile } = loadState(storage);
 const ui = { typing: false, revealedTurn: -1, feedbackTurn: null, typingTimer: 0, onboardingStep: 0, moduleAttempt: {}, moduleRetry: {}, scenarioOpen: window.matchMedia("(min-width: 721px)").matches };
@@ -19,7 +20,16 @@ if (!saveState(storage, state)) volatile = true;
 
 function route() {
   const value = location.hash.replace(/^#/, "");
-  return VIEWS[value] ? value : "start";
+  const requested = VIEWS[value] ? value : "start";
+  if (!state.profile.name && requested !== "onboarding") {
+    location.replace("#onboarding");
+    return "onboarding";
+  }
+  if (state.profile.name && requested === "onboarding") {
+    location.replace("#start");
+    return "start";
+  }
+  return requested;
 }
 
 function go(nextRoute) { location.hash = nextRoute; }
@@ -34,8 +44,16 @@ function renderHeader(activeRoute) {
   const name = state.profile.name;
   document.querySelector("[data-skip]").textContent = t("app.skip");
   document.title = t("app.name");
-  document.querySelector("[data-header]").innerHTML = `
-    <a class="brand" href="#start"><span class="brand-mark" aria-hidden="true">BP</span><span><strong>${escapeHTML(t("app.name"))}</strong><small>${escapeHTML(t("app.tagline"))}</small></span></a>
+  const brand = `<a class="brand" href="#start"><span class="brand-mark" aria-hidden="true">BP</span><span><strong>${escapeHTML(t("app.name"))}</strong><small>${escapeHTML(t("app.tagline"))}</small></span></a>`;
+  const header = document.querySelector("[data-header]");
+  if (activeRoute === "onboarding") {
+    header.innerHTML = brand;
+    const onboardingBanner = document.querySelector("[data-banner]");
+    onboardingBanner.hidden = !volatile;
+    onboardingBanner.textContent = volatile ? t("app.storageVolatile") : "";
+    return;
+  }
+  header.innerHTML = `${brand}
     <nav aria-label="${escapeHTML(t("nav.overview"))}">
       <a href="#start" ${activeRoute === "start" ? "aria-current=\"page\"" : ""}>${escapeHTML(t("nav.overview"))}</a>
       <a href="#simulation" ${activeRoute === "simulation" ? "aria-current=\"page\"" : ""}>${escapeHTML(t("nav.simulation"))}</a>
@@ -86,7 +104,8 @@ function afterRender(activeRoute) {
     ui.typing = false;
     ui.revealedTurn = index;
     render();
-    document.querySelector('[data-action="choose"][data-index="0"]')?.focus();
+    const active = document.activeElement;
+    if (!active || active === document.body || active.closest("[data-main]")) document.querySelector('[data-action="choose"][data-index="0"]')?.focus();
     await speak(index);
   }, 900 + Math.round((Math.random() - 0.5) * 400));
 }
@@ -96,6 +115,7 @@ let lastPct = progress(state);
 
 function render() {
   const activeFocusSelector = focusSelector(document.activeElement);
+  const focusWasInHeader = Boolean(document.activeElement?.closest?.("[data-header]"));
   const activeRoute = route();
   const routeChanged = activeRoute !== lastRoute;
   if (routeChanged) {
@@ -109,7 +129,8 @@ function render() {
   document.querySelector("[data-main]").innerHTML = VIEWS[activeRoute].render(state, ui);
   document.querySelectorAll("[data-pct]").forEach((element) => element.style.setProperty("--pct", `${element.dataset.pct}%`));
   const focusTarget = document.querySelector("[data-focus]");
-  if (focusTarget) focusTarget.focus();
+  if (focusWasInHeader && !routeChanged && activeFocusSelector) document.querySelector(activeFocusSelector)?.focus();
+  else if (focusTarget) focusTarget.focus();
   else if (activeFocusSelector) document.querySelector(activeFocusSelector)?.focus();
   else if (routeChanged) document.getElementById("view-title")?.focus({ preventScroll: true });
   const pct = progress(state);
@@ -132,6 +153,13 @@ document.addEventListener("click", (event) => {
   if (!element) return;
   const currentContent = content(getLang());
   switch (element.dataset.action) {
+    case "choose-lang":
+      state.profile.lang = element.dataset.lang;
+      setLang(state.profile.lang);
+      save();
+      ui.onboardingStep = 1;
+      render();
+      return;
     case "toggle-scenario":
       ui.scenarioOpen = !element.closest("details").open;
       return;
@@ -203,6 +231,7 @@ document.addEventListener("click", (event) => {
       return;
     case "reset-all":
       state = loadState({ getItem: () => null }).state;
+      ui.onboardingStep = 0;
       ui.revealedTurn = -1;
       ui.feedbackTurn = null;
       ui.moduleAttempt = {};
@@ -213,6 +242,25 @@ document.addEventListener("click", (event) => {
       else go("start");
       return;
   }
+});
+
+document.addEventListener("submit", (event) => {
+  const form = event.target.closest('[data-action="save-name"]');
+  if (!form) return;
+  event.preventDefault();
+  const input = form.elements.name;
+  const name = input.value.trim().slice(0, 40);
+  if (!name) {
+    input.setCustomValidity(" ");
+    input.reportValidity();
+    input.setCustomValidity("");
+    input.focus();
+    return;
+  }
+  state.profile.name = name;
+  save();
+  ui.onboardingStep = 0;
+  go("start");
 });
 
 document.addEventListener("change", (event) => {

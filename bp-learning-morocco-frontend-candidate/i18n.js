@@ -1,6 +1,7 @@
 import { fr } from "./locales/fr.js";
+import { ar } from "./locales/ar.js";
 
-const LOCALES = { fr };
+const LOCALES = { fr, ar };
 let lang = "fr";
 const warned = new Set();
 
