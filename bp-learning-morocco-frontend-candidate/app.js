@@ -1,6 +1,7 @@
-import { loadState, saveState, createProfile, setActive, activeProfile, resetProfile, isComplete, nextRoute } from "./state.js";
+import { loadState, saveState, createProfile, setActive, activeProfile, resetProfile, isComplete, nextRoute, syncCourse } from "./state.js";
 import { t, setLang, getLang } from "./i18n.js";
-import { content } from "./fixtures.js";
+import { content, setActiveCourse, activeCourseData, activeCourseKey } from "./fixtures.js";
+import { COURSE_STORAGE_KEY, parseCourseFile, validateCourse } from "./course.js";
 import { escapeHTML, icon } from "./views/shared.js";
 import * as welcome from "./views/welcome.js";
 import * as home from "./views/home.js";
@@ -13,8 +14,32 @@ import * as audio from "./audio.js";
 const VIEWS = { welcome, home, simulation, checks, summary, manager };
 const storage = window.localStorage;
 const sessionKey = "bp-session";
+let courseStorageVolatile = false;
+
+function restoreStoredCourse() {
+  try {
+    const stored = storage.getItem(COURSE_STORAGE_KEY);
+    if (stored === null) return;
+    let raw;
+    try {
+      raw = JSON.parse(stored);
+    } catch {
+      storage.removeItem(COURSE_STORAGE_KEY);
+      return;
+    }
+    const result = validateCourse(raw);
+    if (result.ok) setActiveCourse(result.course);
+  } catch {
+    courseStorageVolatile = true;
+  }
+}
+
+restoreStoredCourse();
 let { state, volatile } = loadState(storage);
-const ui = { adding: false, nameDraft: "", typing: false, revealedTurn: -1, feedbackTurn: null, typingTimer: 0, checkIndex: 0, checkAttempt: {}, checkRetry: {} };
+volatile = volatile || courseStorageVolatile;
+const bootReset = syncCourse(state, activeCourseKey());
+if (bootReset && !saveState(storage, state)) volatile = true;
+const ui = { adding: false, nameDraft: "", typing: false, revealedTurn: -1, feedbackTurn: null, typingTimer: 0, checkIndex: 0, checkAttempt: {}, checkRetry: {}, courseErrors: [], courseNotice: null, courseStorageWarning: false };
 
 function readSession() {
   try { return window.sessionStorage.getItem(sessionKey); } catch { return null; }
@@ -200,8 +225,64 @@ document.addEventListener("click", (event) => {
       if (profile) { resetProfile(state, profile.id); writeSession(profile.id); save(); }
       ui.revealedTurn = -1; ui.feedbackTurn = null; ui.typing = false; go("simulation");
       return;
+    case "download-template": {
+      const course = activeCourseData();
+      const blob = new Blob([JSON.stringify(course, null, 2)], { type: "application/json" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${course.id}-v${course.version}.json`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      return;
+    }
+    case "restore-course":
+      document.querySelector("[data-course-dialog]")?.showModal();
+      return;
+    case "restore-course-confirm": {
+      setActiveCourse(null);
+      ui.courseErrors = [];
+      ui.courseStorageWarning = false;
+      ui.courseNotice = { title: t("course.default"), reset: syncCourse(state, activeCourseKey()) };
+      try { storage.removeItem(COURSE_STORAGE_KEY); } catch { volatile = true; ui.courseStorageWarning = true; }
+      if (!saveState(storage, state)) { volatile = true; ui.courseStorageWarning = true; }
+      render();
+      return;
+    }
     default: return;
   }
+});
+
+document.addEventListener("change", async (event) => {
+  const input = event.target.closest('[data-action="import-course"]');
+  if (!input) return;
+  const file = input.files?.[0];
+  if (!file) return;
+  let result;
+  try {
+    result = parseCourseFile(await file.text());
+  } catch {
+    result = { ok: false, errors: [{ code: "json", path: "fichier", params: {} }] };
+  }
+  input.value = "";
+  ui.courseNotice = null;
+  ui.courseStorageWarning = false;
+  if (!result.ok) {
+    ui.courseErrors = result.errors;
+    render();
+    return;
+  }
+  setActiveCourse(result.course);
+  ui.courseErrors = [];
+  let storageWarning = false;
+  try { storage.setItem(COURSE_STORAGE_KEY, JSON.stringify(result.course)); } catch { storageWarning = true; volatile = true; }
+  const reset = syncCourse(state, activeCourseKey());
+  if (!saveState(storage, state)) { storageWarning = true; volatile = true; }
+  ui.courseStorageWarning = storageWarning;
+  ui.courseNotice = { title: result.course.fr.course.title, reset };
+  render();
 });
 
 document.addEventListener("submit", (event) => {

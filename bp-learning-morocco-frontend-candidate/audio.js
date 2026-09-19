@@ -22,11 +22,17 @@ export function stop() {
 export async function play(el, text, lang) {
   try {
     stop();
-    if (el && (await tryMp3(el))) return "mp3";
+    if (hasSource(el) && (await tryMp3(el))) return "mp3";
     return trySynth(text, lang) ? "synth" : "silent";
   } catch {
     return "silent";
   }
+}
+
+function hasSource(el) {
+  if (!el) return false;
+  if (typeof el.getAttribute === "function") return Boolean(el.getAttribute("src"));
+  return Boolean(el.src);
 }
 
 function tryMp3(el) {

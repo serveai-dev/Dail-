@@ -1,5 +1,5 @@
 import { t, getLang } from "../i18n.js";
-import { content } from "../fixtures.js";
+import { content, isCustomCourse } from "../fixtures.js";
 import { stepsDone } from "../state.js";
 import { escapeHTML, icon, avatar, feedbackBar, track, verdictTag } from "./shared.js";
 
@@ -26,7 +26,8 @@ export function render(state, ui) {
   if (ui.typing) messages.push(`<div class="message-row customer typing-row"><span class="avatar avatar-small" aria-hidden="true"></span><div class="message typing" aria-hidden="true"><i></i><i></i><i></i></div></div>`);
 
   const audioTurn = feedbackIndex ?? (!done && ui.revealedTurn >= index ? index : null);
-  const listen = audioTurn === null ? "" : `<button class="listen" type="button" data-action="listen" data-turn="${escapeHTML(audioTurn)}" aria-label="${escapeHTML(t("sim.listen"))}">${icon("speaker")}<span>${escapeHTML(t("sim.listen"))}</span></button><audio preload="none" data-audio src="audio/${escapeHTML(getLang())}/turn-${escapeHTML(audioTurn + 1)}.mp3"></audio>`;
+  const audioElement = isCustomCourse() ? `<audio preload="none" data-audio></audio>` : `<audio preload="none" data-audio src="audio/${escapeHTML(getLang())}/turn-${escapeHTML(audioTurn + 1)}.mp3"></audio>`;
+  const listen = audioTurn === null ? "" : `<button class="listen" type="button" data-action="listen" data-turn="${escapeHTML(audioTurn)}" aria-label="${escapeHTML(t("sim.listen"))}">${icon("speaker")}<span>${escapeHTML(t("sim.listen"))}</span></button>${audioElement}`;
   const turn = feedbackIndex === null ? null : D[feedbackIndex];
   const feedback = turn ? feedbackBar({
     kind: profile.dialogueAnswers[feedbackIndex] === turn.best ? "success" : "attention",

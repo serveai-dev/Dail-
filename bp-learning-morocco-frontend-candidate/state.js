@@ -1,11 +1,9 @@
-import { CONTENT } from "./fixtures.js";
-
-const C = CONTENT.fr;
+import { activeCourseKey, content } from "./fixtures.js";
+import { DEFAULT_COURSE_KEY } from "./course.js";
 export const STORE_KEY = "bp-learning-v3";
 export const V2_KEY = "bp-learning-v2";
 export const LEGACY_KEY = "bp-historic-frontend-morocco-fr-v1";
 const LANGS = new Set(["fr", "ar"]);
-const MODULES = new Map(C.modules.map((module) => [module.id, module]));
 const object = (value) => value && typeof value === "object" && !Array.isArray(value);
 
 export const DEFAULT = Object.freeze({ version: 3, activeId: null, profiles: {} });
@@ -14,10 +12,12 @@ function validDate(value) {
   return typeof value === "string" && !Number.isNaN(Date.parse(value));
 }
 
+function courseContent() { return content("fr"); }
+
 function cleanAnswers(value) {
   const answers = [];
   if (!Array.isArray(value)) return answers;
-  for (const answer of value.slice(0, C.dialogue.length)) {
+  for (const answer of value.slice(0, courseContent().dialogue.length)) {
     if (!Number.isInteger(answer) || answer < 0 || answer > 2) break;
     answers.push(answer);
   }
@@ -27,8 +27,9 @@ function cleanAnswers(value) {
 function cleanModules(value) {
   const modules = {};
   if (!object(value)) return modules;
+  const definitions = new Map(courseContent().modules.map((module) => [module.id, module]));
   for (const [id, record] of Object.entries(value)) {
-    const definition = MODULES.get(id);
+    const definition = definitions.get(id);
     if (definition && object(record) && Number.isInteger(record.first) && record.first >= 0 && record.first < definition.answers.length) {
       modules[id] = { first: record.first, solved: record.solved === true };
     }
@@ -43,6 +44,7 @@ function cleanProfile(id, raw) {
     id,
     name: raw.name.trim().slice(0, 40),
     lang: raw.lang,
+    courseKey: typeof raw.courseKey === "string" && raw.courseKey ? raw.courseKey : DEFAULT_COURSE_KEY,
     createdAt: raw.createdAt,
     dialogueAnswers: cleanAnswers(raw.dialogueAnswers),
     modules: cleanModules(raw.modules),
@@ -91,6 +93,7 @@ export function migrateV2(raw) {
         id,
         name: source.profile.name,
         lang: source.profile.lang,
+        courseKey: DEFAULT_COURSE_KEY,
         createdAt: new Date().toISOString(),
         dialogueAnswers: source.dialogueAnswers,
         modules: source.modules,
@@ -105,7 +108,7 @@ export function migrateV1(raw) {
   const modules = {};
   if (object(raw.quizAnswers)) {
     for (const [id, first] of Object.entries(raw.quizAnswers)) {
-      const definition = MODULES.get(id);
+      const definition = new Map(courseContent().modules.map((module) => [module.id, module])).get(id);
       if (definition && Number.isInteger(first)) modules[id] = { first, solved: first === definition.correct };
     }
   }
@@ -148,6 +151,7 @@ export function createProfile(state, name, lang) {
     id,
     name: cleanName,
     lang: LANGS.has(lang) ? lang : "fr",
+    courseKey: activeCourseKey(),
     createdAt: new Date().toISOString(),
     dialogueAnswers: [],
     modules: {},
@@ -181,11 +185,13 @@ export function resetProfile(state, id) {
 }
 
 export function dialogueScore(profile) {
+  const C = courseContent();
   const best = profile.dialogueAnswers.filter((answer, index) => answer === C.dialogue[index]?.best).length;
   return { best, total: C.dialogue.length, pct: Math.round((best / C.dialogue.length) * 100) };
 }
 
 export function modulesSummary(profile) {
+  const C = courseContent();
   return {
     solved: C.modules.filter((module) => profile.modules[module.id]?.solved === true).length,
     firstTry: C.modules.filter((module) => profile.modules[module.id]?.first === module.correct).length,
@@ -202,11 +208,26 @@ export function progress(profile) {
 }
 
 export function isComplete(profile) {
+  const C = courseContent();
   return profile.dialogueAnswers.length === C.dialogue.length && modulesSummary(profile).solved === C.modules.length;
 }
 
 export function nextRoute(profile) {
+  const C = courseContent();
   if (profile.dialogueAnswers.length < C.dialogue.length) return "simulation";
   if (modulesSummary(profile).solved < C.modules.length) return "checks";
   return "summary";
+}
+
+export function syncCourse(state, key) {
+  let reset = 0;
+  for (const profile of Object.values(state.profiles)) {
+    if (profile.courseKey === key) continue;
+    profile.dialogueAnswers = [];
+    profile.modules = {};
+    profile.completedAt = null;
+    profile.courseKey = key;
+    reset += 1;
+  }
+  return reset;
 }

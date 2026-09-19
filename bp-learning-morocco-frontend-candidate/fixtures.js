@@ -1,3 +1,5 @@
+import { DEFAULT_COURSE_KEY, courseKey } from "./course.js";
+
 export const CONTENT = Object.freeze({ fr: {
   course: {
     eyebrow: "Communication en pharmacie",
@@ -204,4 +206,26 @@ export const CONTENT = Object.freeze({ fr: {
   ],
 } });
 
-export function content(lang) { return CONTENT[lang] ?? CONTENT.fr; }
+const DEFAULT_COURSE = Object.freeze({ format: "bp-course-1", id: "default", version: 1, fr: CONTENT.fr, ar: CONTENT.ar });
+let activeCourse = null;
+
+export function setActiveCourse(course) {
+  activeCourse = course ?? null;
+}
+
+export function activeCourseData() {
+  return activeCourse ?? DEFAULT_COURSE;
+}
+
+export function activeCourseKey() {
+  return activeCourse ? courseKey(activeCourse) : DEFAULT_COURSE_KEY;
+}
+
+export function isCustomCourse() {
+  return activeCourse !== null;
+}
+
+export function content(lang) {
+  if (!activeCourse) return CONTENT[lang] ?? CONTENT.fr;
+  return activeCourse[lang] ?? activeCourse.fr;
+}

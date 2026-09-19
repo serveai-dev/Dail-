@@ -1,0 +1,125 @@
+{
+  "format": "bp-course-1",
+  "id": "orienter-vers-pharmacien",
+  "version": 1,
+  "fr": {
+    "course": {
+      "eyebrow": "Communication au comptoir",
+      "title": "Orienter vers le pharmacien avec tact",
+      "description": "Un entraînement pour accueillir une question précise sans répondre à la place du pharmacien.",
+      "duration": "12 minutes",
+      "level": "Fondamentaux"
+    },
+    "scenario": {
+      "initials": "CM",
+      "customer": "Client fictif · Casablanca",
+      "context": "Au comptoir, un client vous demande s’il peut mélanger deux produits. La question est précise et appelle l’avis du pharmacien.",
+      "goal": "Accueillez la question, ne répondez pas vous-même et présentez le pharmacien en expliquant la prochaine étape."
+    },
+    "preparation": [
+      {
+        "id": "accueillir",
+        "title": "Accueillir la question",
+        "body": "Montrez que vous avez entendu la demande et remerciez la personne de l’avoir posée."
+      },
+      {
+        "id": "orienter",
+        "title": "Ne pas répondre soi-même",
+        "body": "Pour une question précise sur deux produits, ne donnez pas votre propre réponse au comptoir."
+      },
+      {
+        "id": "presenter",
+        "title": "Présenter la suite",
+        "body": "Présentez le pharmacien chaleureusement et dites simplement ce qui va se passer maintenant."
+      }
+    ],
+    "dialogue": [
+      {
+        "text": "Bonjour, j’ai une question précise : est-ce que je peux mélanger ces deux produits ?",
+        "choices": [
+          "Bonjour, merci de me poser la question. Je vais vous orienter vers le pharmacien pour qu’il vous réponde.",
+          "Je pense que oui, mais je préfère ne pas m’avancer.",
+          "Vous pouvez sûrement les mélanger si vous les prenez à des moments différents."
+        ],
+        "best": 0,
+        "feedback": "Vous accueillez la question et vous annoncez tout de suite une orientation vers le pharmacien.",
+        "reactions": {
+          "good": "Merci, je voulais être sûr de demander à la bonne personne.",
+          "almost": "D’accord, mais je ne sais pas si ma question est vraiment importante."
+        }
+      },
+      {
+        "text": "Je peux vous montrer les deux boîtes. Vous pourriez me dire directement ce que vous en pensez ?",
+        "choices": [
+          "Je préfère que le pharmacien vérifie votre question précise plutôt que de vous répondre moi-même.",
+          "Je peux regarder les boîtes et vous dire ce qui me semble logique.",
+          "Si vous n’avez jamais eu de problème avec ces produits, cela devrait aller."
+        ],
+        "best": 0,
+        "feedback": "Vous gardez une limite professionnelle claire sans laisser la personne seule avec sa question.",
+        "reactions": {
+          "good": "Très bien, je préfère avoir une réponse vérifiée.",
+          "almost": "Je comprends, mais j’espérais gagner un peu de temps."
+        }
+      },
+      {
+        "text": "D’accord. Comment cela va se passer maintenant ?",
+        "choices": [
+          "Je vais vous présenter au pharmacien. Il va regarder votre question avec vous et vous expliquer la suite.",
+          "Attendez ici, quelqu’un finira bien par venir vous répondre.",
+          "Le pharmacien est occupé, revenez un autre jour si vous voulez une réponse."
+        ],
+        "best": 0,
+        "feedback": "Vous présentez le pharmacien avec chaleur et vous rendez la prochaine étape concrète.",
+        "reactions": {
+          "good": "Merci, c’est rassurant de savoir ce qui va se passer.",
+          "almost": "Je vais attendre, mais je ne sais toujours pas à qui parler."
+        }
+      }
+    ],
+    "modules": [
+      {
+        "id": "accueil-question",
+        "label": "Accueil",
+        "title": "Reconnaître la demande",
+        "description": "Une question précise mérite d’être accueillie avec attention.",
+        "question": "Quelle première phrase montre que vous avez entendu la question ?",
+        "answers": [
+          "Merci de me poser la question, je vais vous orienter vers le pharmacien.",
+          "Ce n’est probablement rien, ne vous inquiétez pas.",
+          "Je ne sais pas, demandez à quelqu’un d’autre."
+        ],
+        "correct": 0,
+        "explanation": "Cette phrase reconnaît la demande et prépare une orientation claire, sans minimiser ni abandonner la personne."
+      },
+      {
+        "id": "limite-professionnelle",
+        "label": "Positionnement",
+        "title": "Ne pas répondre à la place",
+        "description": "La limite protège la personne et rend l’orientation vers le pharmacien naturelle.",
+        "question": "Que faites-vous face à une question précise sur deux produits ?",
+        "answers": [
+          "Je donne mon avis si les produits me paraissent familiers.",
+          "Je demande au pharmacien de vérifier la question avec la personne.",
+          "Je suggère d’essayer et de voir ce qui se passe."
+        ],
+        "correct": 1,
+        "explanation": "Vous ne répondez pas vous-même : vous orientez la personne vers le pharmacien, qui pourra traiter sa question."
+      },
+      {
+        "id": "prochaine-etape",
+        "label": "Suite",
+        "title": "Dire ce qui va se passer",
+        "description": "Une prochaine étape concrète rend l’orientation rassurante et chaleureuse.",
+        "question": "Quelle formulation explique le mieux la suite ?",
+        "answers": [
+          "Attendez là, le pharmacien viendra quand il pourra.",
+          "Revenez plus tard, ce sera plus simple.",
+          "Je vais vous présenter au pharmacien, qui va regarder votre question avec vous."
+        ],
+        "correct": 2,
+        "explanation": "Présenter le pharmacien et expliquer la prochaine étape donne un repère simple et montre que la personne est accompagnée."
+      }
+    ]
+  }
+}

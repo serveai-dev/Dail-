@@ -177,6 +177,14 @@ progress { accent-color: var(--primary); }
 @keyframes feedback-in { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
 .manager .button { margin-block-start: var(--space-5); }
+.course-admin { display: grid; gap: var(--space-2); margin-block: var(--space-6); padding-block: var(--space-5); padding-inline: var(--space-5); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+.course-admin h2, .course-admin p { margin-block: 0; }
+.course-active { font-size: var(--fs-h3); }
+.course-file:focus-visible + label { outline: 3px solid var(--focus); outline-offset: 4px; }
+.course-errors { margin-block-start: var(--space-3); padding-block: var(--space-3); padding-inline: var(--space-4); color: var(--attention-ink); background: var(--attention-soft); border-inline-start: 3px solid var(--attention); }
+.course-errors h3 { margin-block: 0 var(--space-2); color: inherit; font-size: var(--fs-body); }
+.course-errors ul { margin-block: 0; padding-inline-start: 1.25rem; }
+.course-notice { margin-block-start: var(--space-3) !important; padding-block: var(--space-3); padding-inline: var(--space-4); color: var(--primary-strong); background: var(--primary-soft); border-inline-start: 3px solid var(--primary); }
 .empty-state { max-inline-size: 640px; padding-block: var(--space-7); padding-inline: var(--space-5); color: var(--muted); border: 2px dashed var(--border); border-radius: var(--radius); text-align: center; }
 .roster { inline-size: 100%; margin-block: var(--space-6); border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); }
 .roster th, .roster td { padding-block: var(--space-3); padding-inline: var(--space-3); border-block-end: 1px solid var(--border); text-align: start; vertical-align: top; }
