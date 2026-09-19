@@ -139,7 +139,10 @@ function render() {
   document.querySelectorAll("[data-pct]").forEach((element) => element.style.setProperty("--pct", `${element.dataset.pct}%`));
   const focusTarget = document.querySelector("[data-focus]");
   if (focusWasInHeader && !routeChanged && activeFocusSelector) document.querySelector(activeFocusSelector)?.focus();
-  else if (focusTarget) focusTarget.focus();
+  else if (focusTarget) {
+    focusTarget.focus({ preventScroll: true });
+    focusTarget.closest(".feedback-bar")?.scrollIntoView({ block: "nearest", behavior: "instant" });
+  }
   else if (activeFocusSelector) document.querySelector(activeFocusSelector)?.focus();
   else if (routeChanged) document.getElementById("view-title")?.focus({ preventScroll: true });
   const pct = progress(state);
@@ -221,7 +224,9 @@ document.addEventListener("click", (event) => {
       ui.moduleRetry[id] = false;
       save();
       render();
-      document.querySelector(`[data-module-card="${CSS.escape(id)}"] [data-feedback-bar] button`)?.focus();
+      const moduleBarButton = document.querySelector(`[data-module-card="${CSS.escape(id)}"] [data-feedback-bar] button`);
+      moduleBarButton?.focus({ preventScroll: true });
+      moduleBarButton?.closest(".feedback-bar")?.scrollIntoView({ block: "nearest", behavior: "instant" });
       return;
     }
     case "retry-module":

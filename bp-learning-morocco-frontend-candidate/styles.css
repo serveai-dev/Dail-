@@ -6,6 +6,7 @@ html,
 body {
   max-inline-size: 100%;
   overflow-inline: clip;
+  overflow-x: clip;
 }
 
 a {
@@ -106,6 +107,7 @@ a {
   gap: var(--space-1);
   min-inline-size: 0;
   overflow-inline: auto;
+  overflow-x: auto;
 }
 
 .site-header nav a {
@@ -536,7 +538,7 @@ progress::-moz-progress-bar {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
   min-inline-size: 0;
-  overflow: hidden;
+  overflow: clip;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -1352,3 +1354,30 @@ dialog::backdrop {
 .certificate h1 { max-inline-size: none; }
 .manager-card { margin-inline: 0; }
 @media print { .site-footer { display: none !important; } }
+
+.message.user small { opacity: 1; color: var(--surface); }
+
+.chip { direction: ltr; unicode-bidi: isolate; }
+@media (max-width: 520px) { .profile-button { display: none; } }
+
+@media (max-width: 400px) {
+  .site-header {
+    gap: var(--space-2);
+    padding-inline: var(--space-3);
+  }
+
+  .brand {
+    gap: var(--space-2);
+  }
+
+  .lang-switch select {
+    inline-size: 88px;
+    padding-inline: var(--space-2);
+  }
+}
+
+@media (max-width: 340px) {
+  .brand strong {
+    display: none;
+  }
+}
