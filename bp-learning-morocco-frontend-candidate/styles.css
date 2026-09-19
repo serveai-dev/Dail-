@@ -293,7 +293,7 @@ dialog::backdrop { background: rgb(20 33 28 / .5); }
 .welcome-split .profile-grid { justify-content: start; }
 @media (max-width: 720px) {
   .welcome-split { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); min-block-size: 0; }
-  .welcome-art { block-size: 190px; border-radius: 20px; }
-  .welcome-art img { object-position: center 20%; }
+  .welcome-art { block-size: clamp(220px, 34vh, 280px); border-radius: 20px; }
+  .welcome-art img { object-position: center 58%; }
   .welcome-panel { padding-block: 0 var(--space-5); }
 }
