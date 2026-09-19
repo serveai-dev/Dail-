@@ -26,6 +26,8 @@ test("checks renders exactly one question", () => {
   const html = checks.render(stateFor("Nadia", { dialogueAnswers: [0, 0, 0] }), { checkIndex: 0, checkAttempt: {}, checkRetry: {} });
   assert.equal((html.match(/class="choice /g) ?? []).length, 3);
   assert.equal((html.match(/check-body/g) ?? []).length, 1);
+  assert.match(html, /data-action="say"/);
+  assert.equal((html.match(/translate="no"/g) ?? []).length, 3);
 });
 
 test("simulation feedback includes the customer's reaction", () => {

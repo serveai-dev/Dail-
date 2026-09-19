@@ -1,7 +1,7 @@
 import { t, getLang } from "../i18n.js";
 import { content } from "../fixtures.js";
 import { modulesSummary, stepsDone } from "../state.js";
-import { escapeHTML, feedbackBar, icon, track } from "./shared.js";
+import { escapeHTML, feedbackBar, icon, track, sayButton } from "./shared.js";
 
 export function render(state, ui) {
   const profile = state.profiles[state.activeId];
@@ -19,7 +19,7 @@ export function render(state, ui) {
     const selectedWrong = wrong && attempted === answerIndex;
     const selectedCorrect = correct && attempted === answerIndex;
     const disabled = answered;
-    return `<button class="choice ${selectedWrong ? "choice-wrong" : ""} ${selectedCorrect ? "choice-correct" : ""}" type="button" data-action="answer-check" data-index="${escapeHTML(answerIndex)}" ${disabled ? "disabled" : ""}><span class="choice-num" aria-hidden="true">${escapeHTML(String.fromCharCode(65 + answerIndex))}</span><span>${escapeHTML(answer)}</span></button>`;
+    return `<button class="choice ${selectedWrong ? "choice-wrong" : ""} ${selectedCorrect ? "choice-correct" : ""}" type="button" data-action="answer-check" data-index="${escapeHTML(answerIndex)}" ${disabled ? "disabled" : ""}><span class="choice-num" aria-hidden="true" translate="no">${escapeHTML(String.fromCharCode(65 + answerIndex))}</span><span>${escapeHTML(answer)}</span></button>`;
   }).join("");
   const bar = answered ? feedbackBar({
     kind: correct ? "success" : "attention",
@@ -34,7 +34,7 @@ export function render(state, ui) {
     <div class="player-top"><a class="player-close" href="#home" aria-label="${escapeHTML(t("player.close"))}">${icon("close")}<span>${escapeHTML(t("player.closeShort"))}</span></a>${track(stepsDone(profile), current)}<span></span></div>
     <div class="player-body check-body">
       <span class="module-label">${escapeHTML(module.label)}</span>
-      <h1 id="view-title" tabindex="-1">${escapeHTML(module.question)}</h1>
+      <div class="check-question-heading"><h1 id="view-title" tabindex="-1">${escapeHTML(module.question)}</h1>${sayButton(`check:${index}`, t("checks.listen"))}</div>
       <div class="choice-list check-choices">${choices}</div>
     </div>
     ${bar}

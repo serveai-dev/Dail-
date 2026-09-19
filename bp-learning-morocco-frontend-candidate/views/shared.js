@@ -9,6 +9,7 @@ export function icon(name, className = "") {
     arrow: '<path d="M5 12h14M13 6l6 6-6 6" />',
     check: '<path d="m5 12 4 4L19 6" />',
     speaker: '<path d="M4 10v4h4l5 4V6l-5 4H4Zm11.5-2.5a6 6 0 0 1 0 9M18 5a10 10 0 0 1 0 14" />',
+    lock: '<rect x="5" y="10" width="14" height="10" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" />',
     close: '<path d="m6 6 12 12M18 6 6 18" />',
     dot: '<circle cx="12" cy="12" r="4" fill="currentColor" stroke="none" />',
   };
@@ -24,7 +25,11 @@ export function verdictTag(best) {
 }
 
 export function avatar(initials, className = "avatar") {
-  return `<span class="${escapeHTML(className)}" aria-hidden="true">${escapeHTML(initials)}</span>`;
+  return `<span class="${escapeHTML(className)}" aria-hidden="true" translate="no">${escapeHTML(initials)}</span>`;
+}
+
+export function sayButton(target, label) {
+  return `<div class="say-control"><button class="say" type="button" data-action="say" data-say="${escapeHTML(target)}" aria-label="${escapeHTML(label)}" aria-pressed="false">${icon("speaker")}</button></div>`;
 }
 
 export function track(steps, current) {

@@ -41,9 +41,9 @@ function picker(profiles) {
   return `<section class="welcome picker page-shell" aria-labelledby="view-title">
     <div class="picker-heading"><h1 id="view-title" tabindex="-1">${escapeHTML(t("picker.title"))}</h1>${languageToggle()}</div>
     <div class="profile-grid">
-      ${profiles.map((profile) => `<button class="profile-tile" type="button" data-action="pick-profile" data-id="${escapeHTML(profile.id)}"><span class="profile-initial ${tint(profile.id)}">${escapeHTML(profile.name.slice(0, 1).toUpperCase())}</span><strong>${escapeHTML(profile.name)}</strong><small>${escapeHTML(t("picker.meta", { done: profile.dialogueAnswers.length + Object.values(profile.modules).filter((module) => module.solved).length, total: 6 }))}</small></button>`).join("")}
+      ${profiles.map((profile) => `<button class="profile-tile" type="button" data-action="pick-profile" data-id="${escapeHTML(profile.id)}"><span class="profile-initial ${tint(profile.id)}" translate="no">${escapeHTML(profile.name.slice(0, 1).toUpperCase())}</span><strong>${escapeHTML(profile.name)}</strong><small>${escapeHTML(t("picker.meta", { done: profile.dialogueAnswers.length + Object.values(profile.modules).filter((module) => module.solved).length, total: 6 }))}</small></button>`).join("")}
       <button class="profile-tile profile-add" type="button" data-action="add-profile"><span class="profile-initial add-initial">+</span><strong>${escapeHTML(t("picker.add"))}</strong><small>${escapeHTML(t("picker.newMeta"))}</small></button>
     </div>
-    ${routeLink("manager", t("nav.manager"), "button-quiet quiet-link")}
+    <a class="button button-quiet quiet-link" href="#admin">${icon("lock")}<span>${escapeHTML(t("admin.door"))}</span></a>
   </section>`;
 }

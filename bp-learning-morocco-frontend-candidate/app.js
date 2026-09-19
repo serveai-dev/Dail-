@@ -1,7 +1,9 @@
 import { loadState, saveState, createProfile, setActive, activeProfile, resetProfile, isComplete, nextRoute, syncCourse } from "./state.js";
 import { t, setLang, getLang } from "./i18n.js";
-import { content, setActiveCourse, activeCourseData, activeCourseKey } from "./fixtures.js";
+import { content, setActiveCourse, activeCourseData, activeCourseKey, isCustomCourse } from "./fixtures.js";
 import { COURSE_STORAGE_KEY, parseCourseFile, validateCourse } from "./course.js";
+import { courseFromCSV, courseToCSV } from "./csv.js";
+import { isPinSet, verifyPin, setPin, resetAdmin, setAdminSession, isAdminSession, lockAdmin } from "./admin.js";
 import { escapeHTML, icon } from "./views/shared.js";
 import * as welcome from "./views/welcome.js";
 import * as home from "./views/home.js";
@@ -9,9 +11,10 @@ import * as simulation from "./views/simulation.js";
 import * as checks from "./views/checks.js";
 import * as summary from "./views/summary.js";
 import * as manager from "./views/manager.js";
+import * as adminLogin from "./views/admin-login.js";
 import * as audio from "./audio.js";
 
-const VIEWS = { welcome, home, simulation, checks, summary, manager };
+const VIEWS = { welcome, home, simulation, checks, summary, manager, admin: adminLogin };
 const storage = window.localStorage;
 const sessionKey = "bp-session";
 let courseStorageVolatile = false;
@@ -39,7 +42,7 @@ let { state, volatile } = loadState(storage);
 volatile = volatile || courseStorageVolatile;
 const bootReset = syncCourse(state, activeCourseKey());
 if (bootReset && !saveState(storage, state)) volatile = true;
-const ui = { adding: false, nameDraft: "", typing: false, revealedTurn: -1, feedbackTurn: null, typingTimer: 0, checkIndex: 0, checkAttempt: {}, checkRetry: {}, courseErrors: [], courseNotice: null, courseStorageWarning: false };
+const ui = { adding: false, nameDraft: "", typing: false, revealedTurn: -1, feedbackTurn: null, typingTimer: 0, checkIndex: 0, checkAttempt: {}, checkRetry: {}, courseErrors: [], courseNotice: null, courseStorageWarning: false, adminError: null };
 
 function readSession() {
   try { return window.sessionStorage.getItem(sessionKey); } catch { return null; }
@@ -61,7 +64,11 @@ function route() {
   const aliases = { onboarding: "welcome", start: "home", prep: "simulation", result: "checks", modules: "checks", plan: "summary", certificate: "summary" };
   const requested = aliases[raw] ?? (VIEWS[raw] ? raw : "home");
   if (requested !== raw) location.replace(`#${requested}`);
-  if (requested !== "manager" && !activeProfile(state)) {
+  if (requested === "manager" && !isAdminSession(window.sessionStorage)) {
+    if (requested !== "admin") location.replace("#admin");
+    return "admin";
+  }
+  if (!["manager", "admin"].includes(requested) && !activeProfile(state)) {
     if (requested !== "welcome") location.replace("#welcome");
     return "welcome";
   }
@@ -85,7 +92,7 @@ function save() {
 function renderHeader(activeRoute) {
   const header = document.querySelector("[data-header]");
   const profile = activeProfile(state);
-  const visible = ["welcome", "home", "summary", "manager"].includes(activeRoute);
+  const visible = ["welcome", "home", "summary", "manager", "admin"].includes(activeRoute);
   const banner = document.querySelector("[data-banner]");
   banner.hidden = !volatile;
   banner.textContent = volatile ? t("app.storageVolatile") : "";
@@ -93,10 +100,11 @@ function renderHeader(activeRoute) {
   document.querySelector("[data-skip]").textContent = t("app.skip");
   document.title = t("app.name");
   if (!visible) { header.innerHTML = ""; return; }
-  const brand = `<a class="brand" href="#home"><span class="brand-mark" aria-hidden="true">${icon("check")}</span><strong>${escapeHTML(t("app.name"))}</strong></a>`;
+  const brand = `<a class="brand" href="#home"><span class="brand-mark" aria-hidden="true">${icon("check")}</span><strong translate="no">${escapeHTML(t("app.name"))}</strong></a>`;
   const otherLang = getLang() === "fr" ? t("lang.ar") : t("lang.fr");
-  const account = profile ? `<details class="account-menu"><summary aria-label="${escapeHTML(t("nav.account", { name: profile.name }))}"><span class="profile-initial header-initial">${escapeHTML(profile.name.slice(0, 1).toUpperCase())}</span><span class="account-name">${escapeHTML(profile.name)}</span></summary><div class="account-panel"><strong>${escapeHTML(profile.name)}</strong><small>${escapeHTML(t("welcome.local"))}</small><button type="button" data-action="switch-profile">${escapeHTML(t("menu.switch"))}</button><a href="#manager">${escapeHTML(t("nav.manager"))}</a><button type="button" data-action="reset-confirm">${escapeHTML(t("menu.reset"))}</button></div></details>` : "";
-  header.innerHTML = `${brand}<div class="header-end">${activeRoute === "welcome" ? "" : `<button class="header-lang" type="button" data-action="toggle-lang" aria-label="${escapeHTML(t("nav.language"))}">${escapeHTML(otherLang)}</button>`}${account}</div>${profile ? `<dialog data-reset-dialog><form method="dialog"><h2>${escapeHTML(t("menu.reset"))}</h2><p>${escapeHTML(t("plan.resetConfirmBody"))}</p><div class="button-row"><button class="button button-secondary" value="cancel">${escapeHTML(t("plan.resetCancel"))}</button><button class="button button-primary" value="confirm" data-action="reset-profile">${escapeHTML(t("plan.resetConfirm"))}</button></div></form></dialog>` : ""}`;
+  const account = profile ? `<details class="account-menu"><summary aria-label="${escapeHTML(t("nav.account", { name: profile.name }))}"><span class="profile-initial header-initial" translate="no">${escapeHTML(profile.name.slice(0, 1).toUpperCase())}</span><span class="account-name">${escapeHTML(profile.name)}</span></summary><div class="account-panel"><strong>${escapeHTML(profile.name)}</strong><small>${escapeHTML(t("welcome.local"))}</small><button type="button" data-action="switch-profile">${escapeHTML(t("menu.switch"))}</button><button type="button" data-action="reset-confirm">${escapeHTML(t("menu.reset"))}</button></div></details>` : "";
+  const lock = activeRoute === "manager" ? `<button class="header-lang" type="button" data-action="admin-lock">${escapeHTML(t("admin.lock"))}</button>` : "";
+  header.innerHTML = `${brand}<div class="header-end">${activeRoute === "welcome" || activeRoute === "admin" ? "" : `<button class="header-lang" type="button" data-action="toggle-lang" aria-label="${escapeHTML(t("nav.language"))}">${escapeHTML(otherLang)}</button>`}${lock}${account}</div>${profile ? `<dialog data-reset-dialog><form method="dialog"><h2>${escapeHTML(t("menu.reset"))}</h2><p>${escapeHTML(t("plan.resetConfirmBody"))}</p><div class="button-row"><button class="button button-secondary" value="cancel">${escapeHTML(t("plan.resetCancel"))}</button><button class="button button-primary" value="confirm" data-action="reset-profile">${escapeHTML(t("plan.resetConfirm"))}</button></div></form></dialog>` : ""}`;
 }
 
 function focusSelector(element) {
@@ -104,12 +112,47 @@ function focusSelector(element) {
   return `[data-action="${CSS.escape(element.dataset.action)}"]${element.dataset.id ? `[data-id="${CSS.escape(element.dataset.id)}"]` : ""}${element.dataset.index ? `[data-index="${CSS.escape(element.dataset.index)}"]` : ""}`;
 }
 
-async function speak(turn) {
+let speakingButton = null;
+let audioNoticeTimer = 0;
+
+function resetSpeaking() {
+  speakingButton?.classList.remove("playing");
+  speakingButton?.setAttribute("aria-pressed", "false");
+  speakingButton = null;
+  audio.stop();
+}
+
+function clearAudioNotices() {
+  document.querySelectorAll(".audio-status").forEach((status) => status.remove());
+  clearTimeout(audioNoticeTimer);
+}
+
+function sayText(target) {
+  const [kind, value] = String(target).split(":");
+  const index = Number(value);
+  const C = content(getLang());
+  return kind === "check" ? C.modules[index]?.question ?? "" : C.dialogue[index]?.text ?? "";
+}
+
+async function speak(target, button = null) {
+  const sameButton = button && button === speakingButton;
+  clearAudioNotices();
+  if (sameButton) { resetSpeaking(); return; }
+  resetSpeaking();
+  const text = sayText(target);
   const element = document.querySelector("[data-audio]");
-  const button = document.querySelector('[data-action="listen"]');
-  const text = content(getLang()).dialogue[turn]?.text ?? "";
-  button?.setAttribute("aria-busy", "true");
-  try { await audio.play(element, text, getLang()); } finally { button?.removeAttribute("aria-busy"); }
+  if (element && target.startsWith("dialogue:") && !isCustomCourse()) element.src = `audio/${getLang()}/turn-${Number(target.split(":")[1]) + 1}.mp3`;
+  if (button) { button.classList.add("playing"); button.setAttribute("aria-pressed", "true"); speakingButton = button; }
+  const result = await audio.play(element, text, getLang(), { allowMp3: !isCustomCourse() && target.startsWith("dialogue:") });
+  if (button && result === "unavailable") {
+    const status = document.createElement("span");
+    status.className = "audio-status";
+    status.setAttribute("role", "status");
+    status.textContent = t(getLang() === "ar" ? "audio.noVoice.ar" : "audio.noVoice.fr");
+    button.parentElement?.append(status);
+    audioNoticeTimer = window.setTimeout(() => status.remove(), 6000);
+  }
+  if (button === speakingButton) resetSpeaking();
 }
 
 function afterRender(activeRoute) {
@@ -131,7 +174,7 @@ function afterRender(activeRoute) {
       render();
       const active = document.activeElement;
       if (!active || active === document.body || active.closest("[data-main]")) document.querySelector('[data-action="choose"][data-index="0"]')?.focus({ preventScroll: true });
-      await speak(index);
+      await speak(`dialogue:${index}`, document.querySelector(`[data-action="say"][data-say="dialogue:${index}"]`));
     }, 900 + Math.round((Math.random() - 0.5) * 400));
   }
 }
@@ -142,6 +185,7 @@ function render() {
   const activeRoute = route();
   const changed = activeRoute !== lastRoute;
   if (changed) { audio.stop(); clearTimeout(ui.typingTimer); ui.typingTimer = 0; ui.typing = false; ui.feedbackTurn = null; }
+  ui.adminPinSet = isPinSet(storage);
   renderHeader(activeRoute);
   document.querySelector("[data-main]").innerHTML = VIEWS[activeRoute].render(state, ui);
   const focusTarget = document.querySelector("[data-focus]");
@@ -166,6 +210,7 @@ document.addEventListener("click", (event) => {
   if (!menu) document.querySelectorAll(".account-menu[open]").forEach((item) => { item.open = false; });
   const element = event.target.closest("[data-action]");
   if (!element) return;
+  if (element.dataset.action !== "say") clearAudioNotices();
   const profile = activeProfile(state);
   switch (element.dataset.action) {
     case "set-lang":
@@ -194,7 +239,24 @@ document.addEventListener("click", (event) => {
     }
     case "continue-dialogue": ui.feedbackTurn = null; render(); return;
     case "to-checks": ui.feedbackTurn = null; go("checks"); return;
-    case "listen": audio.stop(); speak(Number(element.dataset.turn)); return;
+    case "say": speak(element.dataset.say, element); return;
+    case "admin-lock":
+      lockAdmin(window.sessionStorage);
+      state.activeId = null;
+      writeSession(null);
+      go("welcome");
+      return;
+    case "admin-reset": document.querySelector("[data-admin-dialog]")?.showModal(); return;
+    case "admin-reset-confirm":
+      resetAdmin(storage);
+      setActiveCourse(null);
+      ui.courseErrors = [];
+      ui.courseNotice = null;
+      syncCourse(state, activeCourseKey());
+      save();
+      document.querySelector("[data-admin-dialog]")?.close();
+      render();
+      return;
     case "answer-check": {
       if (!profile) return;
       const modules = content(getLang()).modules;
@@ -227,11 +289,12 @@ document.addEventListener("click", (event) => {
       return;
     case "download-template": {
       const course = activeCourseData();
-      const blob = new Blob([JSON.stringify(course, null, 2)], { type: "application/json" });
+      const csv = element.dataset.template === "csv";
+      const blob = new Blob([csv ? courseToCSV(course) : JSON.stringify(course, null, 2)], { type: csv ? "text/csv" : "application/json" });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${course.id}-v${course.version}.json`;
+      link.download = `${course.id}-v${course.version}.${csv ? "csv" : "json"}`;
       document.body.append(link);
       link.click();
       link.remove();
@@ -262,9 +325,12 @@ document.addEventListener("change", async (event) => {
   if (!file) return;
   let result;
   try {
-    result = parseCourseFile(await file.text());
+    const source = await file.text();
+    const csv = file.name.toLowerCase().endsWith(".csv") || source.trimStart().startsWith("type;") || source.trimStart().startsWith("type,") || source.trimStart().startsWith("type\t");
+    result = csv ? courseFromCSV(source) : parseCourseFile(source);
+    if (csv && result.ok) result = { ok: true, course: result.raw };
   } catch {
-    result = { ok: false, errors: [{ code: "json", path: "fichier", params: {} }] };
+    result = { ok: false, errors: [{ code: "csv", path: "fichier", params: {} }] };
   }
   input.value = "";
   ui.courseNotice = null;
@@ -286,6 +352,34 @@ document.addEventListener("change", async (event) => {
 });
 
 document.addEventListener("submit", (event) => {
+  const adminForm = event.target.closest('[data-action="admin-login"]');
+  if (adminForm) {
+    event.preventDefault();
+    const pin = adminForm.elements.pin.value;
+    const confirm = adminForm.elements.confirm?.value;
+    adminForm.querySelectorAll("input").forEach((input) => { input.value = ""; });
+    ui.adminError = null;
+    if (adminForm.dataset.mode === "create") {
+      if (!/^\d{6}$/.test(pin)) ui.adminError = { key: "admin.invalid", vars: {} };
+      else if (pin !== confirm) ui.adminError = { key: "admin.mismatch", vars: {} };
+      else setPin(storage, pin).then(() => { setAdminSession(window.sessionStorage); ui.adminError = null; go("manager"); }).catch(() => { ui.adminError = { key: "admin.invalid", vars: {} }; render(); });
+    } else {
+      verifyPin(storage, pin).then((result) => {
+        if (result === "ok") { setAdminSession(window.sessionStorage); ui.adminError = null; go("manager"); return; }
+        if (result === "locked") {
+          let seconds = 60;
+          try { const record = JSON.parse(storage.getItem("bp-admin")); seconds = Math.max(1, Math.ceil((Date.parse(record.lockedUntil) - Date.now()) / 1000)); } catch { /* use the safe default */ }
+          ui.adminError = { key: "admin.locked", vars: { s: seconds } };
+        } else if (result === "wrong") {
+          let failures = 1;
+          try { failures = JSON.parse(storage.getItem("bp-admin")).failures; } catch { /* use the safe default */ }
+          ui.adminError = { key: "admin.wrong", vars: { left: Math.max(0, 5 - failures) } };
+        } else ui.adminError = { key: "admin.unset", vars: {} };
+        render();
+      });
+    }
+    return;
+  }
   const form = event.target.closest('[data-action="save-name"]');
   if (!form) return;
   event.preventDefault();
